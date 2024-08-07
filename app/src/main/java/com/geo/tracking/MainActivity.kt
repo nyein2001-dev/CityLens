@@ -1,10 +1,10 @@
 package com.geo.tracking
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,15 +21,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             GeoTrackingTheme {
                 Surface(
@@ -43,6 +48,20 @@ class MainActivity : ComponentActivity() {
                     RequestLocationPermission(
                         onPermissionGranted = {
                             showPermissionResultText = true
+                            getLastUserLocation(
+                                onGetLastLocationSuccess = {
+                                    locationText =
+                                        "Location using LAST-LOCATION: LATITUDE: ${it.first}, LONGITUDE: ${it.second}"
+                                },
+                                onGetLastLocationFailed = { exception ->
+                                    showPermissionResultText = true
+                                    locationText =
+                                        exception.localizedMessage ?: "Error Getting Last Location"
+                                },
+                                onGetLastLocationIsNull = {
+
+                                }
+                            )
                         },
                         onPermissionDenied = {
                             showPermissionResultText = true
@@ -70,6 +89,35 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun getLastUserLocation(
+        onGetLastLocationSuccess: (Pair<Double, Double>) -> Unit,
+        onGetLastLocationFailed: (Exception) -> Unit,
+        onGetLastLocationIsNull: () -> Unit
+    ) {
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+        if (areLocationPermissionGranted()) {
+            fusedLocationProviderClient.lastLocation
+                .addOnSuccessListener { location ->
+                    location?.let {
+                        onGetLastLocationSuccess(Pair(it.latitude, it.longitude))
+                    }?.run {
+                        onGetLastLocationIsNull()
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    onGetLastLocationFailed(exception)
+                }
+        }
+    }
+
+    private fun areLocationPermissionGranted(): Boolean {
+        return (ActivityCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED)
     }
 }
 
