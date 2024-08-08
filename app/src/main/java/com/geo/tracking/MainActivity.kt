@@ -1,6 +1,7 @@
 package com.geo.tracking
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -28,6 +29,8 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 
 class MainActivity : ComponentActivity() {
 
@@ -59,7 +62,17 @@ class MainActivity : ComponentActivity() {
                                         exception.localizedMessage ?: "Error Getting Last Location"
                                 },
                                 onGetLastLocationIsNull = {
-
+                                    getCurrentLocation(
+                                        onGetCurrentLocationSuccess = {
+                                            locationText =
+                                                "Location using CURRENT-LOCATION: LATITUDE: ${it.first}, LONGITUDE: ${it.second}"
+                                        },
+                                        onGetCurrentLocationFailed = {
+                                            showPermissionResultText = true
+                                            locationText = it.localizedMessage
+                                                ?: "Error Getting Current Location"
+                                        }
+                                    )
                                 }
                             )
                         },
@@ -68,7 +81,7 @@ class MainActivity : ComponentActivity() {
                             permissionResultText = "Permissoin Denied :("
                         },
                         onPermissionsRevoked = {
-                            showPermissionResultText = true;
+                            showPermissionResultText = true
                             permissionResultText = "Permission Revoked :("
                         }
                     )
@@ -91,6 +104,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun getLastUserLocation(
         onGetLastLocationSuccess: (Pair<Double, Double>) -> Unit,
         onGetLastLocationFailed: (Exception) -> Unit,
@@ -109,6 +123,29 @@ class MainActivity : ComponentActivity() {
                 .addOnFailureListener { exception ->
                     onGetLastLocationFailed(exception)
                 }
+        }
+    }
+
+    private fun getCurrentLocation(
+        onGetCurrentLocationSuccess: (Pair<Double, Double>) -> Unit,
+        onGetCurrentLocationFailed: (Exception) -> Unit,
+        priority: Boolean = true
+    ) {
+        val accuracy = if (priority) Priority.PRIORITY_HIGH_ACCURACY
+        else Priority.PRIORITY_BALANCED_POWER_ACCURACY
+
+        if (areLocationPermissionGranted()) {
+            fusedLocationProviderClient.getCurrentLocation(
+                accuracy, CancellationTokenSource().token,
+            ).addOnSuccessListener { location ->
+                location?.let {
+                    onGetCurrentLocationSuccess(Pair(it.latitude, it.longitude))
+                }?.run {
+
+                }
+            }.addOnFailureListener { exception ->
+                onGetCurrentLocationFailed(exception)
+            }
         }
     }
 
