@@ -1,18 +1,26 @@
 package com.geo.tracking
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.pm.PackageManager
+import android.app.Activity
+import android.content.Context
+import android.location.Location
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,191 +28,205 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.app.ActivityCompat
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.geo.tracking.ui.theme.GeoTrackingTheme
+import com.geo.tracking.utils.LocationUtils.createLocationRequest
+import com.geo.tracking.utils.LocationUtils.fetchLastLocation
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             GeoTrackingTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    var locationText by remember { mutableStateOf("No location obtained :(") }
-                    var showPermissionResultText by remember { mutableStateOf(false) }
-                    var permissionResultText by remember { mutableStateOf("Permission Granted...") }
 
-                    RequestLocationPermission(
-                        onPermissionGranted = {
-                            showPermissionResultText = true
-                            getLastUserLocation(
-                                onGetLastLocationSuccess = {
-                                    locationText =
-                                        "Location using LAST-LOCATION: LATITUDE: ${it.first}, LONGITUDE: ${it.second}"
-                                },
-                                onGetLastLocationFailed = { exception ->
-                                    showPermissionResultText = true
-                                    locationText =
-                                        exception.localizedMessage ?: "Error Getting Last Location"
-                                },
-                                onGetLastLocationIsNull = {
-                                    getCurrentLocation(
-                                        onGetCurrentLocationSuccess = {
-                                            locationText =
-                                                "Location using CURRENT-LOCATION: LATITUDE: ${it.first}, LONGITUDE: ${it.second}"
-                                        },
-                                        onGetCurrentLocationFailed = {
-                                            showPermissionResultText = true
-                                            locationText = it.localizedMessage
-                                                ?: "Error Getting Current Location"
-                                        }
-                                    )
-                                }
-                            )
-                        },
-                        onPermissionDenied = {
-                            showPermissionResultText = true
-                            permissionResultText = "Permissoin Denied :("
-                        },
-                        onPermissionsRevoked = {
-                            showPermissionResultText = true
-                            permissionResultText = "Permission Revoked :("
-                        }
+                var locationFromGps: Location? by remember { mutableStateOf(null) }
+                var openDialog: String by remember { mutableStateOf("") }
+
+                val locationPermissionsState = rememberMultiplePermissionsState(
+                    listOf(
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
                     )
+                )
 
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Requesting location permission...",
-                            textAlign = TextAlign.Center
-                        )
-                        if (showPermissionResultText) {
-                            Text(text = permissionResultText, textAlign = TextAlign.Center)
-                            Text(text = locationText, textAlign = TextAlign.Center)
+                val context = LocalContext.current
+                val fusedLocationProviderClient =
+                    remember { LocationServices.getFusedLocationProviderClient(context) }
+                val locationCallback = remember {
+                    object : LocationCallback() {
+                        override fun onLocationResult(locationResult: LocationResult) {
+                            Log.d(
+                                "onLocationResult",
+                                "locationResult.latitude: ${locationResult.lastLocation?.latitude}"
+                            )
+                            locationFromGps = locationResult.lastLocation
                         }
                     }
                 }
-            }
-        }
-    }
 
-    @SuppressLint("MissingPermission")
-    private fun getLastUserLocation(
-        onGetLastLocationSuccess: (Pair<Double, Double>) -> Unit,
-        onGetLastLocationFailed: (Exception) -> Unit,
-        onGetLastLocationIsNull: () -> Unit
-    ) {
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-        if (areLocationPermissionGranted()) {
-            fusedLocationProviderClient.lastLocation
-                .addOnSuccessListener { location ->
-                    location?.let {
-                        onGetLastLocationSuccess(Pair(it.latitude, it.longitude))
-                    }?.run {
-                        onGetLastLocationIsNull()
+                val settingsLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartIntentSenderForResult(),
+                    onResult = {
+                        when (it.resultCode) {
+                            Activity.RESULT_OK -> {
+                                context.fetchLastLocation(
+                                    fusedLocationClient = fusedLocationProviderClient,
+                                    settingsLauncher = null,
+                                    location = {
+                                        Log.d("settingsLauncher", "location: ${it.latitude}")
+                                        if (locationFromGps == null && locationFromGps != it) {
+                                            locationFromGps = it
+                                        }
+                                    },
+                                    locationCallback = locationCallback
+                                )
+                            }
+
+                            Activity.RESULT_CANCELED -> {
+                                Toast.makeText(
+                                    context,
+                                    "Activity.RESULT_CANCELED",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+                )
+
+                LaunchedEffect(
+                    key1 = locationPermissionsState.revokedPermissions.size,
+                    key2 = locationPermissionsState.shouldShowRationale,
+                    block = {
+                        fetchLocation(
+                            locationPermissionsState,
+                            context,
+                            settingsLauncher,
+                            fusedLocationProviderClient,
+                            locationCallback,
+                            openDialog = {
+                                openDialog = it
+                            })
+                    })
+
+                LaunchedEffect(
+                    key1 = locationFromGps,
+                    block = {
+                        Log.d("LaunchedEffect", "locationFromGps: $locationFromGps")
+                        // TODO: setup GeoCoder
+
+                    }
+                )
+
+                DisposableEffect(
+                    key1 = true
+                ) {
+                    onDispose {
+                        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
                     }
                 }
-                .addOnFailureListener { exception ->
-                    onGetLastLocationFailed(exception)
+
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        Text(text = "Has permission: ${locationPermissionsState.revokedPermissions.size <= 1}")
+                        Text(text = "Current latitude: ${locationFromGps?.latitude}")
+                        Text(text = "Current longitude: ${locationFromGps?.longitude}")
+                        Button(onClick = {
+                            if (
+                                locationPermissionsState.revokedPermissions.size == 2
+                                && !locationPermissionsState.shouldShowRationale
+                            ) {
+                                openDialog = "Permission fully denied. Go to settings to enable"
+                                Log.d(
+                                    "LaunchedEffect",
+                                    "revokedPermissions.size == 2 && shouldShowRationale"
+                                )
+                            } else {
+                                fetchLocation(
+                                    locationPermissionsState,
+                                    context,
+                                    settingsLauncher,
+                                    fusedLocationProviderClient,
+                                    locationCallback,
+                                    openDialog = {
+                                        openDialog = it
+                                    }
+                                )
+                            }
+                        }) {
+                            Text(text = "Fetch location")
+                        }
+                    }
                 }
+
+
+                if (openDialog.isNotEmpty()) {
+                    Dialog(
+                        onDismissRequest = { openDialog = "" },
+                        properties = DialogProperties(
+                            dismissOnBackPress = false,
+                            dismissOnClickOutside = false
+                        )
+                    ) {
+
+                    }
+                }
+
+            }
         }
     }
 
-    private fun getCurrentLocation(
-        onGetCurrentLocationSuccess: (Pair<Double, Double>) -> Unit,
-        onGetCurrentLocationFailed: (Exception) -> Unit,
-        priority: Boolean = true
+
+    @OptIn(ExperimentalPermissionsApi::class)
+    private fun fetchLocation(
+        locationPermissionsState: MultiplePermissionsState,
+        context: Context,
+        settingsLauncher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>,
+        fusedLocationProviderClient: FusedLocationProviderClient,
+        locationCallback: LocationCallback,
+        openDialog: (String) -> Unit
     ) {
-        val accuracy = if (priority) Priority.PRIORITY_HIGH_ACCURACY
-        else Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        when {
+            locationPermissionsState.revokedPermissions.size <= 1 -> {
+                // Has permission at least one permission [coarse or fine]
+                context.createLocationRequest(
+                    settingsLauncher = settingsLauncher,
+                    fusedLocationClient = fusedLocationProviderClient,
+                    locationCallback = locationCallback
+                )
+                Log.d("LaunchedEffect", "revokedPermissions.size <= 1")
+            }
 
-        if (areLocationPermissionGranted()) {
-            fusedLocationProviderClient.getCurrentLocation(
-                accuracy, CancellationTokenSource().token,
-            ).addOnSuccessListener { location ->
-                location?.let {
-                    onGetCurrentLocationSuccess(Pair(it.latitude, it.longitude))
-                }?.run {
+            locationPermissionsState.shouldShowRationale -> {
+                openDialog("Should show rationale")
+                Log.d("LaunchedEffect", "shouldShowRationale")
+            }
 
-                }
-            }.addOnFailureListener { exception ->
-                onGetCurrentLocationFailed(exception)
+            locationPermissionsState.revokedPermissions.size == 2 -> {
+                locationPermissionsState.launchMultiplePermissionRequest()
+                Log.d("LaunchedEffect", "revokedPermissions.size == 2")
+            }
+
+            else -> {
+                openDialog("This app requires location permission")
+                Log.d("LaunchedEffect", "else")
             }
         }
-    }
-
-    private fun areLocationPermissionGranted(): Boolean {
-        return (ActivityCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED)
-    }
-}
-
-@OptIn(ExperimentalPermissionsApi::class)
-@Composable
-fun RequestLocationPermission(
-    onPermissionGranted: () -> Unit,
-    onPermissionDenied: () -> Unit,
-    onPermissionsRevoked: () -> Unit
-) {
-    val permissionState = rememberMultiplePermissionsState(
-        listOf(
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-        )
-    )
-    LaunchedEffect(key1 = permissionState) {
-        val allPermissionRevoked =
-            permissionState.permissions.size == permissionState.revokedPermissions.size
-
-        val permissionToRequest = permissionState.permissions.filter { !it.status.isGranted }
-
-        if (permissionToRequest.isNotEmpty()) permissionState.launchMultiplePermissionRequest()
-
-        if (allPermissionRevoked) {
-            onPermissionsRevoked()
-        } else {
-            if (permissionState.allPermissionsGranted) {
-                onPermissionGranted()
-            } else {
-                onPermissionDenied()
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    GeoTrackingTheme {
-        RequestLocationPermission(
-            onPermissionGranted = {
-
-            },
-            onPermissionDenied = {
-
-            },
-            onPermissionsRevoked = {
-
-            }
-        )
     }
 }
