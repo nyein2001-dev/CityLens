@@ -163,30 +163,25 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(currentPosition: GeoPoint) {
-    // Initialize and manage MapView lifecycle
     val mapView = rememberMapViewWithLifecycle()
 
-    // AndroidView integrates Android views with Compose
     AndroidView(
         factory = { _ ->
             mapView.apply {
-                // Configure map view
                 controller.setZoom(15.0)
                 controller.setCenter(currentPosition)
 
-                // Add marker
                 val marker = Marker(this)
                 marker.position = currentPosition
                 marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                 marker.title = "My Position"
                 overlays.add(marker)
 
-                // Add location overlay
                 val locationOverlay = MyLocationNewOverlay(mapView)
                 locationOverlay.enableMyLocation()
                 overlays.add(locationOverlay)
             }
-            mapView // Return the MapView instance for AndroidView
+            mapView
         },
         modifier = Modifier.fillMaxSize()
     )
@@ -229,9 +224,12 @@ fun RationaleAlert(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 @Composable
 fun rememberMapViewWithLifecycle(): MapView {
     val context = LocalContext.current
-    val mapView = remember { MapView(context).apply {
-        Configuration.getInstance().load(context, context.getSharedPreferences("osm_pref", Context.MODE_PRIVATE))
-    } }
+    val mapView = remember {
+        MapView(context).apply {
+            Configuration.getInstance()
+                .load(context, context.getSharedPreferences("osm_pref", Context.MODE_PRIVATE))
+        }
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
 
