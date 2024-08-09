@@ -1,16 +1,18 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.kapt)
+    alias(libs.plugins.com.google.dagger.hilt.android )
 }
 
 android {
     namespace = "com.geo.tracking"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.geo.tracking"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -50,7 +52,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -61,6 +62,13 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.accompanist.permissions)
     implementation(libs.play.services.location)
+    implementation(libs.javax.inject)
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.activity)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

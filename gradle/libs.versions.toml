@@ -10,6 +10,14 @@ activityCompose = "1.8.0"
 composeBom = "2024.04.01"
 accompanistPermissions = "0.35.1-alpha"
 playServicesLocation = "21.3.0"
+javaxInject = "1"
+mapsCompose = "6.1.1"
+playServicesMaps = "19.0.0"
+hiltAndroid = "2.52"
+hiltCompiler = "2.52"
+lifecycleRuntimeCompose = "2.9.0-alpha01"
+activity = "1.9.1"
+comGoogleDaggerHiltAndroidGradlePlugin = "2.52"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -28,8 +36,19 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
+maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
+play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hiltAndroid" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltCompiler" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+jetbrains-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+com-google-dagger-hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "comGoogleDaggerHiltAndroidGradlePlugin" }
+
+
 
