@@ -32,16 +32,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geo.tracking.extension.hasLocationPermission
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
+import org.osmdroid.views.MapView
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -174,5 +176,21 @@ fun RationaleAlert(onDismiss: () -> Unit, onConfirm: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+private class MapLifecycleObserver(
+    private val mapView: MapView
+) : DefaultLifecycleObserver {
+    override fun onResume(owner: LifecycleOwner) {
+        mapView.onResume()
+    }
+
+    override fun onPause(owner: LifecycleOwner) {
+        mapView.onPause()
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        mapView.onDetach()
     }
 }
