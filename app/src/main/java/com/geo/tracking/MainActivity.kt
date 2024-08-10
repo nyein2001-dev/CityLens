@@ -2,6 +2,7 @@ package com.geo.tracking
 
 import android.os.Bundle
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
@@ -27,22 +28,27 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geo.tracking.extension.hasLocationPermission
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
+import org.osmdroid.config.Configuration
 import org.osmdroid.views.MapView
 
 @AndroidEntryPoint
@@ -177,6 +183,33 @@ fun RationaleAlert(onDismiss: () -> Unit, onConfirm: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun rememberMapViewWithLifecycle(): MapView {
+    val context = LocalContext.current
+    val mapView = remember {
+        MapView(context).apply {
+            Configuration.getInstance()
+                .load(context, context.getSharedPreferences("osm_pref", Context.MODE_PRIVATE))
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(
+        lifecycleOwner
+    ) {
+        val lifecycle = lifecycleOwner.lifecycle
+        val observer = MapLifecycleObserver(mapView)
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+            mapView.onDetach()
+        }
+    }
+
+    return mapView
 }
 
 private class MapLifecycleObserver(
