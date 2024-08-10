@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.geo.tracking.domain.GetLocationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
@@ -18,6 +19,7 @@ class MainActivityVM @Inject constructor(
 ) : ViewModel() {
 
     private val _viewState: MutableStateFlow<ViewState> = MutableStateFlow(ViewState.Loading)
+    val viewState = _viewState.asStateFlow()
 
     fun handle(event: PermissionEvent) {
         when (event) {
