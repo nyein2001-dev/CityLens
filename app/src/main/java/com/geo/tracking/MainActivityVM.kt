@@ -25,9 +25,9 @@ class MainActivityVM @Inject constructor(
         when (event) {
             PermissionEvent.Granted -> {
                 viewModelScope.launch {
-//                    getLocationUseCase.invoke().collect {
-//                        _viewState.value = ViewState.Success(it)
-//                    }
+                    getLocationUseCase.invoke().collect {
+                        _viewState.value = ViewState.Success(it)
+                    }
                 }
             }
 
