@@ -1,4 +1,4 @@
-package com.geo.tracking
+package com.geo.tracking.ui.screens
 
 import android.os.Bundle
 import android.Manifest
@@ -45,8 +45,12 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.geo.tracking.R
 import com.geo.tracking.extension.hasLocationPermission
 import com.geo.tracking.ui.theme.GeoTrackingTheme
+import com.geo.tracking.ui.viewmodel.MainActivityVM
+import com.geo.tracking.ui.viewmodel.PermissionEvent
+import com.geo.tracking.ui.viewmodel.ViewState
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint

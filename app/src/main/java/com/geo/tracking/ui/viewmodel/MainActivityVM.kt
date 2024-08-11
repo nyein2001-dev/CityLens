@@ -1,4 +1,4 @@
-package com.geo.tracking
+package com.geo.tracking.ui.viewmodel
 
 import android.os.Build
 import androidx.annotation.RequiresApi

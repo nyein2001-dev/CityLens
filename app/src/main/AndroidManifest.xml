@@ -18,7 +18,7 @@
         android:theme="@style/Theme.GeoTracking"
         tools:targetApi="31" >
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.screens.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.GeoTracking" >
             <intent-filter>
