@@ -1,5 +1,6 @@
 package com.geo.tracking.ui.viewmodel
 
+import android.location.Location
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -40,7 +41,7 @@ class MainActivityVM @Inject constructor(
 
 sealed interface ViewState {
     data object Loading : ViewState
-    data class Success(val location: GeoPoint?) : ViewState
+    data class Success(val location: Location?) : ViewState
     data object RevokedPermissions : ViewState
 }
 

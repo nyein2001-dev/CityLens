@@ -2,6 +2,7 @@ package com.geo.tracking.data
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.location.Location
 import android.os.Build
 import android.os.Looper
 import android.util.Log
@@ -24,7 +25,7 @@ class LocationService @Inject constructor(
 ) : ILocationService {
     @SuppressLint("MissingPermission")
     @RequiresApi(Build.VERSION_CODES.S)
-    override fun requestLocationUpdates(): Flow<GeoPoint?> = callbackFlow {
+    override fun requestLocationUpdates(): Flow<Location?> = callbackFlow {
         if (!context.hasLocationPermission()) {
             trySend(null)
             return@callbackFlow
@@ -38,7 +39,7 @@ class LocationService @Inject constructor(
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.locations.lastOrNull()?.let {
-                    trySend(GeoPoint(it.latitude, it.longitude))
+                    trySend(it)
                     Log.i("locationExample", "onLocationResult: $it")
                 }
             }
@@ -55,7 +56,7 @@ class LocationService @Inject constructor(
         }
     }
 
-    override fun requestCurrentLocation(): Flow<GeoPoint?> {
+    override fun requestCurrentLocation(): Flow<Location?> {
         TODO("Not yet implemented")
     }
 }

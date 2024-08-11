@@ -1,5 +1,6 @@
 package com.geo.tracking.domain
 
+import android.location.Location
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.geo.tracking.data.ILocationService
@@ -11,5 +12,5 @@ class GetLocationUseCase @Inject constructor(
     private val locationService: ILocationService
 ) {
     @RequiresApi(Build.VERSION_CODES.S)
-    operator fun invoke(): Flow<GeoPoint?> = locationService.requestLocationUpdates()
+    operator fun invoke(): Flow<Location?> = locationService.requestLocationUpdates()
 }

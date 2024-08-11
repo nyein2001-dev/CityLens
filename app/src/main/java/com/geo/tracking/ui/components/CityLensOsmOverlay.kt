@@ -1,12 +1,15 @@
 package com.geo.tracking.ui.components
 
 import android.graphics.Bitmap
+import android.graphics.Bitmap.Config
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Paint.Style
 import android.graphics.Point
 import android.graphics.PointF
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.VectorDrawable
 import android.location.Location
 import android.os.Handler
 import android.os.Looper
@@ -17,7 +20,6 @@ import androidx.core.content.ContextCompat
 import com.geo.tracking.R
 import org.osmdroid.api.IMapController
 import org.osmdroid.api.IMapView
-//import org.osmdroid.library.R
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.TileSystem
 import org.osmdroid.views.MapView
@@ -29,7 +31,8 @@ import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import java.util.LinkedList
 
-class LocationNewOverlay(
+class CityLensOsmOverlay(
+    private val initialPoint: Location,
     private val mapView: MapView,
     private var myLocationProvider: IMyLocationProvider = GpsMyLocationProvider(mapView.context)
 ) : Overlay(), IMyLocationConsumer, IOverlayMenuProvider, Overlay.Snappable {
@@ -43,7 +46,7 @@ class LocationNewOverlay(
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
     private var location: Location? = null
-    private val geoPoint = GeoPoint(0.0, 0.0)
+    private val geoPoint = GeoPoint(initialPoint.latitude, initialPoint.longitude)
     private var isLocationEnabled = false
     private var isFollowing = false
     private var drawAccuracyEnabled = true
@@ -61,16 +64,16 @@ class LocationNewOverlay(
 
     init {
         setPersonIcon(
-            (ContextCompat.getDrawable(
+            ContextCompat.getDrawable(
                 mapView.context,
                 R.drawable.baseline_circle_24
-            ) as BitmapDrawable).bitmap
+            )!!
         )
         setDirectionIcon(
-            (ContextCompat.getDrawable(
+            ContextCompat.getDrawable(
                 mapView.context,
                 R.drawable.round_navigation_48
-            ) as BitmapDrawable).bitmap
+            )!!
         )
         setPersonAnchor()
         setDirectionAnchor()
@@ -188,7 +191,6 @@ class LocationNewOverlay(
             Menu.NONE,
             pMapView?.context?.resources?.getString(R.string.my_location)
         )
-//            .setIcon(pMapView?.context?.resources?.getDrawable(R.drawable.round_my_location_24))
             .setIcon(
                 ContextCompat.getDrawable(
                     pMapView?.context!!,
@@ -261,26 +263,66 @@ class LocationNewOverlay(
         }
     }
 
-    private fun setPersonIcon(icon: Bitmap) {
-        personBitmap = icon
+    private fun setPersonIcon(drawable: Drawable) {
+        personBitmap = when (drawable) {
+            is BitmapDrawable -> {
+                drawable.bitmap
+            }
+
+            is VectorDrawable -> {
+                vectorDrawableToBitmap(drawable)
+            }
+
+            else -> {
+                null
+            }
+        }
+    }
+
+    private fun setDirectionIcon(drawable: Drawable) {
+        directionArrowBitmap = when (drawable) {
+            is BitmapDrawable -> {
+                drawable.bitmap
+            }
+
+            is VectorDrawable -> {
+                vectorDrawableToBitmap(drawable)
+            }
+
+            else -> {
+                null
+            }
+        }
     }
 
     private fun setPersonAnchor() {
-        personHotspot.set(personBitmap!!.width * 0.5f, personBitmap!!.height * 0.8125f)
-    }
-
-    private fun setDirectionIcon(icon: Bitmap) {
-        directionArrowBitmap = icon
+        personBitmap?.let {
+            personHotspot.set(it.width * 0.5f, it.height * 0.5f)
+        }
     }
 
     private fun setDirectionAnchor() {
-        directionArrowCenterX = directionArrowBitmap!!.width * 0.5f
-        directionArrowCenterY = directionArrowBitmap!!.height * 0.5f
+        directionArrowBitmap?.let {
+            directionArrowCenterX = it.width * 0.5f
+            directionArrowCenterY = it.height * 0.5f
+        }
+    }
+
+    private fun vectorDrawableToBitmap(vectorDrawable: VectorDrawable): Bitmap {
+        val bitmap = Bitmap.createBitmap(
+            vectorDrawable.intrinsicWidth, vectorDrawable.intrinsicHeight,
+            Config.ARGB_8888
+        )
+        val canvas = Canvas(bitmap)
+        vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
+        vectorDrawable.draw(canvas)
+        return bitmap
     }
 
     companion object {
-        val MENU_MY_LOCATION = getSafeMenuId()
+        private const val MENU_MY_LOCATION = 1
     }
+
 
     override fun onLocationChanged(location: Location, source: IMyLocationProvider) {
         handler.postAtTime({
@@ -292,3 +334,4 @@ class LocationNewOverlay(
         }, handlerToken, 0)
     }
 }
+
