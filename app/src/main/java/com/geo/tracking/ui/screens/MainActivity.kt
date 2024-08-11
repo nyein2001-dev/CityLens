@@ -50,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geo.tracking.R
 import com.geo.tracking.extension.hasLocationPermission
 import com.geo.tracking.ui.components.CityLensOsmOverlay
+import com.geo.tracking.ui.components.OsmOverlay
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.geo.tracking.ui.viewmodel.MainActivityVM
 import com.geo.tracking.ui.viewmodel.PermissionEvent
@@ -61,6 +62,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

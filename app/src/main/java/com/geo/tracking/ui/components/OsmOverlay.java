@@ -6,6 +6,8 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.VectorDrawable;
 import android.location.Location;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,7 +16,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 
-import org.osmdroid.library.R;
+import androidx.core.content.ContextCompat;
+
+import com.geo.tracking.R;
+
 import org.osmdroid.api.IMapController;
 import org.osmdroid.api.IMapView;
 import org.osmdroid.config.Configuration;
@@ -65,7 +70,7 @@ public class OsmOverlay extends Overlay implements IMyLocationConsumer,
      */
     protected boolean enableAutoStop = true;
     private Location mLocation;
-    private final GeoPoint mGeoPoint = new GeoPoint(0, 0); // for reuse
+    private final GeoPoint mGeoPoint = new GeoPoint(0.0, 0.0); // for reuse
     private boolean mIsLocationEnabled = false;
     protected boolean mIsFollowing = false; // follow location updates
     protected boolean mDrawAccuracyEnabled = true;
@@ -101,16 +106,37 @@ public class OsmOverlay extends Overlay implements IMyLocationConsumer,
         mPaint.setFilterBitmap(true);
 
 
-        setPersonIcon(((BitmapDrawable) mapView.getContext().getResources().getDrawable(R.drawable.person)).getBitmap());
-        setDirectionIcon(((BitmapDrawable) mapView.getContext().getResources().getDrawable(R.drawable.round_navigation_white_48)).getBitmap());
-
+//        setPersonIcon(((BitmapDrawable) mapView.getContext().getResources().getDrawable(R.drawable.baseline_circle_24)).getBitmap());
+        setDirectionIcon(((BitmapDrawable) mapView.getContext().getResources().getDrawable(org.osmdroid.library.R.drawable.round_navigation_white_48)).getBitmap());
+        Drawable personDrawable = ContextCompat.getDrawable(mapView.getContext(), R.drawable.baseline_circle_24);
+//        Drawable directionDrawable = ContextCompat.getDrawable(mapView.getContext(), R.drawable.round_navigation_48);
+        setPersonIcon(drawableToBitmap(personDrawable));
+//        setDirectionIcon(drawableToBitmap(directionDrawable));
         // Calculate position of person icon's feet, scaled to screen density
         mPersonHotspot = new PointF();
-        setPersonAnchor(.5f, .8125f); // anchor for the default icon
+        setPersonAnchor(.5f, .5f); // anchor for the default icon
         setDirectionAnchor(.5f, .5f); // anchor for the default icon
 
         mHandler = new Handler(Looper.getMainLooper());
         setMyLocationProvider(myLocationProvider);
+    }
+
+
+    private Bitmap drawableToBitmap(Drawable drawable) {
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable) drawable).getBitmap();
+        } else if (drawable instanceof VectorDrawable) {
+            VectorDrawable vectorDrawable = (VectorDrawable) drawable;
+            Bitmap bitmap = Bitmap.createBitmap(
+                    vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888
+            );
+            Canvas canvas = new Canvas(bitmap);
+            vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+            vectorDrawable.draw(canvas);
+            return bitmap;
+        } else {
+            throw new IllegalArgumentException("Unsupported drawable type");
+        }
     }
 
     /**
@@ -334,7 +360,7 @@ public class OsmOverlay extends Overlay implements IMyLocationConsumer,
                         pMapView.getContext().getResources().getString(R.string.my_location)
                 )
                 .setIcon(
-                        pMapView.getContext().getResources().getDrawable(R.drawable.ic_menu_mylocation)
+                        pMapView.getContext().getResources().getDrawable(R.drawable.round_my_location_24)
                 )
                 .setCheckable(true);
 

@@ -72,7 +72,7 @@ class CityLensOsmOverlay(
         setDirectionIcon(
             ContextCompat.getDrawable(
                 mapView.context,
-                R.drawable.round_navigation_48
+                R.drawable.arrow
             )!!
         )
         setPersonAnchor()
