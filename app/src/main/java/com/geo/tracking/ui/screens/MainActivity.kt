@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geo.tracking.R
 import com.geo.tracking.extension.hasLocationPermission
+import com.geo.tracking.ui.adapters.CustomInfoWindowAdapter
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.geo.tracking.ui.viewmodel.MainActivityVM
 import com.geo.tracking.ui.viewmodel.PermissionEvent
@@ -208,14 +209,12 @@ fun MainScreen(currentPosition: GeoPoint?) {
                     val marker = Marker(this).apply {
                         this.position = position
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        title = "Current Location"
+                        title = "Location Information"
                         icon = ContextCompat.getDrawable(context, R.drawable.baseline_circle_24)
-                        snippet = "Latitude: ${position.latitude}, Longitude: ${position.longitude}"
+                        snippet = "${position.latitude}, ${position.longitude}"
+                        infoWindow = CustomInfoWindowAdapter(mapView)
                         showInfoWindow()
                         setInfoWindowAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        setOnMarkerClickListener { _, _ ->
-                            false
-                        }
                     }
                     overlays.add(marker)
                 } ?: run {

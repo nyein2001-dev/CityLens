@@ -2,7 +2,6 @@ package com.geo.tracking.ui.theme
 
 import android.app.Activity
 import android.os.Build
-import androidx.annotation.BoolRes
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -13,9 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.tooling.preview.PreviewDynamicColors
 import androidx.core.view.WindowCompat
-import com.geo.tracking.GeoTrackingApp
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
