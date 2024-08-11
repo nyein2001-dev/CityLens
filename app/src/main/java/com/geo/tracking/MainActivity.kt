@@ -37,8 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -49,7 +51,11 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
 import org.osmdroid.config.Configuration
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -139,12 +145,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             is ViewState.Success -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(text = "Success")
-                                }
+                                MainScreen(currentPosition = location)
                             }
                         }
                     }
@@ -183,6 +184,51 @@ fun RationaleAlert(onDismiss: () -> Unit, onConfirm: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun MainScreen(currentPosition: GeoPoint?) {
+    val context = LocalContext.current
+    val mapView = rememberMapViewWithLifecycle()
+
+    AndroidView(
+        factory = {
+            mapView.apply {
+                setMultiTouchControls(true)
+                controller.setZoom(15.0)
+                zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+
+                currentPosition?.let { position ->
+                    controller.setCenter(position)
+
+                    val marker = Marker(this).apply {
+                        this.position = position
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        title = "Current Location"
+                        icon = ContextCompat.getDrawable(context, R.drawable.baseline_circle_24)
+                        snippet = "Latitude: ${position.latitude}, Longitude: ${position.longitude}"
+                        showInfoWindow()
+                        setInfoWindowAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        setOnMarkerClickListener { _, _ ->
+                            false
+                        }
+                    }
+                    overlays.add(marker)
+                } ?: run {
+                    // Optionally handle the case where currentPosition is null
+                    // For example, you could add a default marker or show a message
+                }
+
+                overlays.add(
+                    MyLocationNewOverlay(this).apply {
+                        enableMyLocation()
+                    }
+                )
+            }
+            mapView
+        },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable
