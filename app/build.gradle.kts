@@ -63,8 +63,6 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.play.services.location)
     implementation(libs.javax.inject)
-    implementation(libs.maps.compose)
-    implementation(libs.play.services.maps)
     implementation(libs.hilt.android)
     implementation(libs.osmdroid.android)
     kapt(libs.hilt.compiler)

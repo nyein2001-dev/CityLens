@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">GeoTracking</string>
+    <string name="app_name">City Lens</string>
+    <string name="my_location">My Location</string>
 </resources>

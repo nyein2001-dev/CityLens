@@ -1,10 +1,11 @@
 package com.geo.tracking.data
 
-import com.google.android.gms.maps.model.LatLng
+import android.location.Location
 import kotlinx.coroutines.flow.Flow
+import org.osmdroid.util.GeoPoint
 
 interface ILocationService {
-    fun requestLocationUpdates(): Flow<LatLng?>
+    fun requestLocationUpdates(): Flow<Location?>
 
-    fun requestCurrentLocation(): Flow<LatLng?>
+    fun requestCurrentLocation(): Flow<Location?>
 }
