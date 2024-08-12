@@ -57,45 +57,40 @@ class CityLensOsmOverlay(
     private val drawPixel = Point()
     private val snapPixel = Point()
     private val handler = Handler(Looper.getMainLooper())
-    private val handlerToken = Any()
     private val runOnFirstFix = LinkedList<Runnable>()
     private var optionsMenuEnabled = true
     private var wasEnabledOnPause = false
 
     init {
-        setPersonIcon(
-            ContextCompat.getDrawable(
-                mapView.context,
-                R.drawable.baseline_circle_24
-            )!!
-        )
-        setDirectionIcon(
-            ContextCompat.getDrawable(
-                mapView.context,
-                R.drawable.arrow
-            )!!
-        )
+        initializeIcons()
+    }
+
+    private fun initializeIcons() {
+        setPersonIcon(ContextCompat.getDrawable(mapView.context, R.drawable.baseline_circle_24)!!)
+        setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.arrow)!!)
         setPersonAnchor()
         setDirectionAnchor()
     }
 
     override fun draw(canvas: Canvas, projection: Projection) {
-        location.let {
-            if (isLocationEnabled) {
-                drawMyLocation(canvas, projection, it)
-            }
+        if (isLocationEnabled) {
+            drawMyLocation(canvas, projection, location)
         }
     }
 
     private fun drawMyLocation(canvas: Canvas, projection: Projection, lastFix: Location) {
         projection.toPixels(geoPoint, drawPixel)
+        drawAccuracyCircle(canvas, lastFix, projection)
+        drawDirectionArrow(canvas, lastFix)
+        drawPersonIcon(canvas)
+    }
 
+    private fun drawAccuracyCircle(canvas: Canvas, lastFix: Location, projection: Projection) {
         if (drawAccuracyEnabled) {
             val radius = lastFix.accuracy / TileSystem.GroundResolution(
                 lastFix.latitude,
                 projection.zoomLevel
             ).toFloat()
-
             circlePaint.alpha = 50
             circlePaint.style = Style.FILL
             canvas.drawCircle(drawPixel.x.toFloat(), drawPixel.y.toFloat(), radius, circlePaint)
@@ -104,7 +99,9 @@ class CityLensOsmOverlay(
             circlePaint.style = Style.STROKE
             canvas.drawCircle(drawPixel.x.toFloat(), drawPixel.y.toFloat(), radius, circlePaint)
         }
+    }
 
+    private fun drawDirectionArrow(canvas: Canvas, lastFix: Location) {
         if (lastFix.hasBearing()) {
             canvas.save()
             val mapRotation = lastFix.bearing % 360f
@@ -133,6 +130,17 @@ class CityLensOsmOverlay(
         }
     }
 
+    private fun drawPersonIcon(canvas: Canvas) {
+        personBitmap?.let {
+            canvas.drawBitmap(
+                it,
+                drawPixel.x - personHotspot.x,
+                drawPixel.y - personHotspot.y,
+                paint
+            )
+        }
+    }
+
     override fun onSnapToItem(x: Int, y: Int, snapPoint: Point, mapView: IMapView?): Boolean {
         location.let {
             mapView?.projection?.toPixels(geoPoint, snapPixel)
@@ -145,13 +153,11 @@ class CityLensOsmOverlay(
 
     override fun onTouchEvent(event: MotionEvent, mapView: MapView): Boolean {
         val isSingleFingerDrag = event.action == MotionEvent.ACTION_MOVE && event.pointerCount == 1
-
         if (event.action == MotionEvent.ACTION_DOWN && enableAutoStop) {
             disableFollowLocation()
         } else if (isSingleFingerDrag && isFollowing) {
             return true
         }
-
         return super.onTouchEvent(event, mapView)
     }
 
@@ -169,10 +175,10 @@ class CityLensOsmOverlay(
 
     override fun onDetach(mapView: MapView?) {
         disableMyLocation()
-        this.mapController = null
+        mapController = null
         personBitmap = null
         directionArrowBitmap = null
-        handler.removeCallbacksAndMessages(handlerToken)
+        handler.removeCallbacksAndMessages(null)
         myLocationProvider.destroy()
         super.onDetach(mapView)
     }
@@ -226,9 +232,7 @@ class CityLensOsmOverlay(
 
     private fun enableFollowLocation() {
         isFollowing = true
-        myLocationProvider.lastKnownLocation?.let {
-            setLocation(it)
-        }
+        myLocationProvider.lastKnownLocation?.let { setLocation(it) }
         mapView.postInvalidate()
     }
 
@@ -248,7 +252,7 @@ class CityLensOsmOverlay(
     private fun disableMyLocation() {
         isLocationEnabled = false
         myLocationProvider.stopLocationProvider()
-        handler.removeCallbacksAndMessages(handlerToken)
+        handler.removeCallbacksAndMessages(null)
         mapView.postInvalidate()
     }
 
@@ -263,41 +267,15 @@ class CityLensOsmOverlay(
     }
 
     private fun setPersonIcon(drawable: Drawable) {
-        personBitmap = when (drawable) {
-            is BitmapDrawable -> {
-                drawable.bitmap
-            }
-
-            is VectorDrawable -> {
-                vectorDrawableToBitmap(drawable)
-            }
-
-            else -> {
-                null
-            }
-        }
+        personBitmap = drawable.toBitmap()
     }
 
     private fun setDirectionIcon(drawable: Drawable) {
-        directionArrowBitmap = when (drawable) {
-            is BitmapDrawable -> {
-                drawable.bitmap
-            }
-
-            is VectorDrawable -> {
-                vectorDrawableToBitmap(drawable)
-            }
-
-            else -> {
-                null
-            }
-        }
+        directionArrowBitmap = drawable.toBitmap()
     }
 
     private fun setPersonAnchor() {
-        personBitmap?.let {
-            personHotspot.set(it.width * 0.5f, it.height * 0.5f)
-        }
+        personBitmap?.let { personHotspot.set(it.width * 0.5f, it.height * 0.5f) }
     }
 
     private fun setDirectionAnchor() {
@@ -307,21 +285,24 @@ class CityLensOsmOverlay(
         }
     }
 
-    private fun vectorDrawableToBitmap(vectorDrawable: VectorDrawable): Bitmap {
-        val bitmap = Bitmap.createBitmap(
-            vectorDrawable.intrinsicWidth, vectorDrawable.intrinsicHeight,
-            Config.ARGB_8888
-        )
-        val canvas = Canvas(bitmap)
-        vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
-        vectorDrawable.draw(canvas)
-        return bitmap
+    private fun Drawable.toBitmap(): Bitmap {
+        return when (this) {
+            is BitmapDrawable -> this.bitmap
+            is VectorDrawable -> {
+                val bitmap = Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                setBounds(0, 0, canvas.width, canvas.height)
+                draw(canvas)
+                bitmap
+            }
+
+            else -> throw IllegalArgumentException("Unsupported drawable type")
+        }
     }
 
     companion object {
         private const val MENU_MY_LOCATION = 1
     }
-
 
     override fun onLocationChanged(location: Location, source: IMyLocationProvider) {
         handler.postAtTime({
@@ -330,7 +311,6 @@ class CityLensOsmOverlay(
                 Thread(it).apply { name = this.javaClass.name + "#onLocationChanged" }.start()
             }
             runOnFirstFix.clear()
-        }, handlerToken, 0)
+        }, Any(), 0)
     }
 }
-
