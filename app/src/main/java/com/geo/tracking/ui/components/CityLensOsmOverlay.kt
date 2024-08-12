@@ -32,7 +32,7 @@ import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import java.util.LinkedList
 
 class CityLensOsmOverlay(
-    private val initialPoint: Location,
+    initialPoint: Location,
     private val mapView: MapView,
     private var myLocationProvider: IMyLocationProvider = GpsMyLocationProvider(mapView.context)
 ) : Overlay(), IMyLocationConsumer, IOverlayMenuProvider, Overlay.Snappable {
@@ -45,7 +45,7 @@ class CityLensOsmOverlay(
     private var personBitmap: Bitmap? = null
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
-    private var location: Location? = null
+    private var location: Location = initialPoint
     private val geoPoint = GeoPoint(initialPoint.latitude, initialPoint.longitude)
     private var isLocationEnabled = false
     private var isFollowing = false
@@ -80,7 +80,7 @@ class CityLensOsmOverlay(
     }
 
     override fun draw(canvas: Canvas, projection: Projection) {
-        location?.let {
+        location.let {
             if (isLocationEnabled) {
                 drawMyLocation(canvas, projection, it)
             }
@@ -134,14 +134,13 @@ class CityLensOsmOverlay(
     }
 
     override fun onSnapToItem(x: Int, y: Int, snapPoint: Point, mapView: IMapView?): Boolean {
-        location?.let {
+        location.let {
             mapView?.projection?.toPixels(geoPoint, snapPixel)
             snapPoint.set(snapPixel.x, snapPixel.y)
             val xDiff = (x - snapPixel.x).toDouble()
             val yDiff = (y - snapPixel.y).toDouble()
             return xDiff * xDiff + yDiff * yDiff < 64
         }
-        return false
     }
 
     override fun onTouchEvent(event: MotionEvent, mapView: MapView): Boolean {
