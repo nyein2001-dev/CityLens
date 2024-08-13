@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -47,10 +46,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.geo.tracking.R
 import com.geo.tracking.extension.hasLocationPermission
 import com.geo.tracking.ui.components.CityLensOsmOverlay
-import com.geo.tracking.ui.components.OsmOverlay
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.geo.tracking.ui.viewmodel.MainActivityVM
 import com.geo.tracking.ui.viewmodel.PermissionEvent
@@ -62,13 +59,12 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.S)
-    @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -210,7 +206,7 @@ fun MainScreen(currentPosition: Location?) {
         factory = {
             mapView.apply {
                 setMultiTouchControls(true)
-                controller.setZoom(15.0)
+                controller.setZoom(18.0)
                 zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
 
                 currentPosition?.let { position ->
@@ -235,7 +231,7 @@ fun MainScreen(currentPosition: Location?) {
                 overlays.add(
                     currentPosition?.let { it1 ->
                         CityLensOsmOverlay(it1, this).apply {
-                            disableFollowLocation()
+                            enableFollowLocation()
                             enableMyLocation()
                         }
                     }

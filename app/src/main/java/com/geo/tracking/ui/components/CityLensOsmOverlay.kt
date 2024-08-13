@@ -230,13 +230,13 @@ class CityLensOsmOverlay(
         return false
     }
 
-    private fun enableFollowLocation() {
+    fun enableFollowLocation() {
         isFollowing = true
         myLocationProvider.lastKnownLocation?.let { setLocation(it) }
         mapView.postInvalidate()
     }
 
-    fun disableFollowLocation() {
+    private fun disableFollowLocation() {
         mapController?.stopAnimation(false)
         isFollowing = false
     }
