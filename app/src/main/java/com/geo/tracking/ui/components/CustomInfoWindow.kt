@@ -1,5 +1,6 @@
 package com.geo.tracking.ui.components
 
+import android.location.Location
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun CustomInfoWindow(title: String, snippet: String) {
+fun CustomInfoWindow(position: Location) {
     Surface(
         modifier = Modifier
             .padding(8.dp),
@@ -27,13 +28,16 @@ fun CustomInfoWindow(title: String, snippet: String) {
             modifier = Modifier.padding(12.dp)
         ) {
             Text(
-                text = title,
+                text = "Location Information",
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             Spacer(modifier = Modifier.height(10.dp))
-            Text(text = snippet, style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = "${position.latitude}, ${position.longitude}",
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
     }
 }

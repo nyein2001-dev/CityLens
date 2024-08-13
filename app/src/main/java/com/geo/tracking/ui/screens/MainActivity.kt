@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -86,14 +85,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-//                    TopAppBar(
-//                        title = {
-//                            Text(
-//                                LocalContext.current.getString(R.string.app_name),
-//                                style = MaterialTheme.typography.titleLarge
-//                            )
-//                        },
-//                    )
                     LaunchedEffect(!hasLocationPermission()) {
                         permissionState.launchMultiplePermissionRequest()
                     }
@@ -199,45 +190,28 @@ fun RationaleAlert(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 
 @Composable
 fun MainScreen(currentPosition: Location?) {
-//    val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
 
     AndroidView(
         factory = {
             mapView.apply {
                 setMultiTouchControls(true)
+                minZoomLevel = 5.0
+                maxZoomLevel = 20.0
                 controller.setZoom(18.0)
                 zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-
                 currentPosition?.let { position ->
                     controller.setCenter(GeoPoint(position.latitude, position.longitude))
-//                    overlays.clear()
-//                    val marker = Marker(this).apply {
-//                        this.position = position
-//                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-//                        title = "Location Information"
-//                        icon = ContextCompat.getDrawable(context, R.drawable.baseline_circle_24)
-//                        snippet = "${position.latitude}, ${position.longitude}"
-//                        infoWindow = CustomInfoWindowAdapter(mapView)
-//                        showInfoWindow()
-//                        setInfoWindowAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-//                    }
-//                    overlays.add(marker)
-                } ?: run {
-                    // Optionally handle the case where currentPosition is null
-                    // For example, you could add a default marker or show a message
                 }
-
                 overlays.add(
                     currentPosition?.let { it1 ->
                         CityLensOsmOverlay(it1, this).apply {
                             enableFollowLocation()
                             enableMyLocation()
+                            updateInfoWindow(it1)
                         }
                     }
                 )
-                minZoomLevel = 5.0
-                maxZoomLevel = 20.0
             }
             mapView
         },

@@ -1,5 +1,7 @@
 package com.geo.tracking.ui.components
 
+import android.app.Activity
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Canvas
@@ -16,7 +18,13 @@ import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.FrameLayout
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import com.geo.tracking.R
 import org.osmdroid.api.IMapController
 import org.osmdroid.api.IMapView
@@ -43,6 +51,7 @@ class CityLensOsmOverlay(
         isAntiAlias = true
     }
     private var personBitmap: Bitmap? = null
+    private var infoWindowBitmap: Bitmap? = null
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
     private var location: Location = initialPoint
@@ -132,13 +141,30 @@ class CityLensOsmOverlay(
 
     private fun drawPersonIcon(canvas: Canvas) {
         personBitmap?.let {
-            canvas.drawBitmap(
-                it,
-                drawPixel.x - personHotspot.x,
-                drawPixel.y - personHotspot.y,
-                paint
-            )
+            val personIconX = drawPixel.x - personHotspot.x
+            val personIconY = drawPixel.y - personHotspot.y
+
+            canvas.drawBitmap(it, personIconX, personIconY, paint)
+
+            infoWindowBitmap?.let { infoBitmap ->
+                val infoWindowX = personIconX - (infoBitmap.width / 2) + 45
+                val infoWindowY = personIconY - infoBitmap.height - 10
+                canvas.drawBitmap(infoBitmap, infoWindowX, infoWindowY, paint)
+            }
         }
+    }
+
+    private fun renderInfoWindow(position: Location) {
+        renderComposableToBitmapSafely(mapView.context, position) { bitmap ->
+            infoWindowBitmap = bitmap
+            mapView.postInvalidate()
+        }
+    }
+
+
+    fun updateInfoWindow(position: Location) {
+        renderInfoWindow(position)
+        mapView.postInvalidate()
     }
 
     override fun onSnapToItem(x: Int, y: Int, snapPoint: Point, mapView: IMapView?): Boolean {
@@ -264,6 +290,7 @@ class CityLensOsmOverlay(
         } else {
             mapView.postInvalidate()
         }
+        updateInfoWindow(location)
     }
 
     private fun setPersonIcon(drawable: Drawable) {
@@ -297,6 +324,36 @@ class CityLensOsmOverlay(
             }
 
             else -> throw IllegalArgumentException("Unsupported drawable type")
+        }
+    }
+
+    private fun renderComposableToBitmapSafely(
+        context: Context,
+        position: Location,
+        onBitmapReady: (Bitmap) -> Unit
+    ) {
+        val frameLayout = FrameLayout(context)
+        val composeView = ComposeView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            setContent {
+                CustomInfoWindow(position = position)
+            }
+        }
+
+        frameLayout.addView(composeView)
+
+        val rootView =
+            (context as Activity).window.decorView.findViewById<ViewGroup>(android.R.id.content)
+        rootView.addView(frameLayout)
+
+        frameLayout.doOnLayout {
+            val bitmap = Bitmap.createBitmap(700, 250, Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            frameLayout.draw(canvas)
+
+            rootView.removeView(frameLayout)
+            onBitmapReady(bitmap)
         }
     }
 
