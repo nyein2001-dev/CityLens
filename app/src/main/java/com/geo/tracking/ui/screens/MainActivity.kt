@@ -240,6 +240,8 @@ fun MainScreen(currentPosition: Location?) {
                         }
                     }
                 )
+                minZoomLevel = 5.0
+                maxZoomLevel = 20.0
             }
             mapView
         },
