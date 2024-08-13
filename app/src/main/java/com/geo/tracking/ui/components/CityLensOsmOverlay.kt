@@ -147,7 +147,7 @@ class CityLensOsmOverlay(
             canvas.drawBitmap(it, personIconX, personIconY, paint)
 
             infoWindowBitmap?.let { infoBitmap ->
-                val infoWindowX = personIconX - (infoBitmap.width / 2) + 45
+                val infoWindowX = (personIconX - (infoBitmap.width / 2.25)).toFloat()
                 val infoWindowY = personIconY - infoBitmap.height - 10
                 canvas.drawBitmap(infoBitmap, infoWindowX, infoWindowY, paint)
             }
@@ -348,7 +348,9 @@ class CityLensOsmOverlay(
         rootView.addView(frameLayout)
 
         frameLayout.doOnLayout {
-            val bitmap = Bitmap.createBitmap(700, 250, Config.ARGB_8888)
+            val width = composeView.width
+            val height = composeView.height
+            val bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             frameLayout.draw(canvas)
 
