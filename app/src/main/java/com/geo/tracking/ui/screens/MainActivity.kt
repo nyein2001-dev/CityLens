@@ -4,13 +4,11 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.location.Location
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,12 +22,10 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -47,10 +43,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.geo.tracking.R
 import com.geo.tracking.extension.hasLocationPermission
 import com.geo.tracking.ui.components.CityLensOsmOverlay
-import com.geo.tracking.ui.components.OsmOverlay
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.geo.tracking.ui.viewmodel.MainActivityVM
 import com.geo.tracking.ui.viewmodel.PermissionEvent
@@ -62,13 +56,11 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -90,14 +82,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-//                    TopAppBar(
-//                        title = {
-//                            Text(
-//                                LocalContext.current.getString(R.string.app_name),
-//                                style = MaterialTheme.typography.titleLarge
-//                            )
-//                        },
-//                    )
                     LaunchedEffect(!hasLocationPermission()) {
                         permissionState.launchMultiplePermissionRequest()
                     }
@@ -203,40 +187,25 @@ fun RationaleAlert(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 
 @Composable
 fun MainScreen(currentPosition: Location?) {
-//    val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
 
     AndroidView(
         factory = {
             mapView.apply {
                 setMultiTouchControls(true)
-                controller.setZoom(15.0)
+                minZoomLevel = 5.0
+                maxZoomLevel = 20.0
+                controller.setZoom(18.0)
                 zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-
                 currentPosition?.let { position ->
                     controller.setCenter(GeoPoint(position.latitude, position.longitude))
-//                    overlays.clear()
-//                    val marker = Marker(this).apply {
-//                        this.position = position
-//                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-//                        title = "Location Information"
-//                        icon = ContextCompat.getDrawable(context, R.drawable.baseline_circle_24)
-//                        snippet = "${position.latitude}, ${position.longitude}"
-//                        infoWindow = CustomInfoWindowAdapter(mapView)
-//                        showInfoWindow()
-//                        setInfoWindowAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-//                    }
-//                    overlays.add(marker)
-                } ?: run {
-                    // Optionally handle the case where currentPosition is null
-                    // For example, you could add a default marker or show a message
                 }
-
                 overlays.add(
                     currentPosition?.let { it1 ->
                         CityLensOsmOverlay(it1, this).apply {
-                            disableFollowLocation()
+                            enableFollowLocation()
                             enableMyLocation()
+                            updateInfoWindow(it1)
                         }
                     }
                 )

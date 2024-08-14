@@ -30,8 +30,8 @@ val Typography = Typography(
     labelSmall = TextStyle(
         fontFamily = ledFontFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
+        fontSize = 12.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.5.sp
     )
 

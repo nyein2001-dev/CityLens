@@ -1,19 +1,16 @@
 package com.geo.tracking.ui.viewmodel
 
 import android.location.Location
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.geo.tracking.domain.GetLocationUseCase
+import com.google.android.gms.location.LocationRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
-@RequiresApi(Build.VERSION_CODES.S)
 @HiltViewModel
 class MainActivityVM @Inject constructor(
     private val getLocationUseCase: GetLocationUseCase
@@ -36,6 +33,23 @@ class MainActivityVM @Inject constructor(
                 _viewState.value = ViewState.RevokedPermissions
             }
         }
+    }
+
+    fun changeLocationSettings(distanceFilter: Float, accuracy: String) {
+        createLocationRequest(distanceFilter, accuracy)
+    }
+
+    private fun createLocationRequest(distanceFilter: Float, accuracy: String): LocationRequest {
+        val priority = if (accuracy == "low") {
+            LocationRequest.PRIORITY_LOW_POWER
+        } else {
+            LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        return LocationRequest.Builder(1000)
+            .setMinUpdateDistanceMeters(distanceFilter)
+            .setPriority(priority)
+            .build()
     }
 }
 

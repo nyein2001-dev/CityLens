@@ -1,12 +1,16 @@
 package com.geo.tracking.ui.components
 
+import android.app.Activity
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Paint.Style
 import android.graphics.Point
-import android.graphics.PointF
+import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.VectorDrawable
@@ -16,7 +20,13 @@ import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.FrameLayout
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import com.geo.tracking.R
 import org.osmdroid.api.IMapController
 import org.osmdroid.api.IMapView
@@ -30,6 +40,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import java.util.LinkedList
+import java.util.Random
 
 class CityLensOsmOverlay(
     initialPoint: Location,
@@ -42,7 +53,8 @@ class CityLensOsmOverlay(
         setARGB(0, 100, 100, 255)
         isAntiAlias = true
     }
-    private var personBitmap: Bitmap? = null
+
+    private var infoWindowBitmap: Bitmap? = null
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
     private var location: Location = initialPoint
@@ -50,7 +62,6 @@ class CityLensOsmOverlay(
     private var isLocationEnabled = false
     private var isFollowing = false
     private var drawAccuracyEnabled = true
-    private val personHotspot = PointF()
     private var directionArrowCenterX = 0f
     private var directionArrowCenterY = 0f
     private var enableAutoStop = true
@@ -66,9 +77,7 @@ class CityLensOsmOverlay(
     }
 
     private fun initializeIcons() {
-        setPersonIcon(ContextCompat.getDrawable(mapView.context, R.drawable.baseline_circle_24)!!)
-        setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.arrow)!!)
-        setPersonAnchor()
+        setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.rocket_direction)!!)
         setDirectionAnchor()
     }
 
@@ -83,6 +92,7 @@ class CityLensOsmOverlay(
         drawAccuracyCircle(canvas, lastFix, projection)
         drawDirectionArrow(canvas, lastFix)
         drawPersonIcon(canvas)
+        drawFlamingRocket(canvas, lastFix)
     }
 
     private fun drawAccuracyCircle(canvas: Canvas, lastFix: Location, projection: Projection) {
@@ -102,43 +112,156 @@ class CityLensOsmOverlay(
     }
 
     private fun drawDirectionArrow(canvas: Canvas, lastFix: Location) {
-        if (lastFix.hasBearing()) {
-            canvas.save()
-            val mapRotation = lastFix.bearing % 360f
-            canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
-            directionArrowBitmap?.let {
-                canvas.drawBitmap(
-                    it,
-                    drawPixel.x - directionArrowCenterX,
-                    drawPixel.y - directionArrowCenterY,
-                    paint
-                )
-            }
-            canvas.restore()
-        } else {
-            canvas.save()
-            canvas.rotate(-mapView.mapOrientation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
-            personBitmap?.let {
-                canvas.drawBitmap(
-                    it,
-                    drawPixel.x - personHotspot.x,
-                    drawPixel.y - personHotspot.y,
-                    paint
-                )
-            }
-            canvas.restore()
-        }
-    }
-
-    private fun drawPersonIcon(canvas: Canvas) {
-        personBitmap?.let {
+        canvas.save()
+        val mapRotation = lastFix.bearing % 360f
+        canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
+        directionArrowBitmap?.let {
             canvas.drawBitmap(
                 it,
-                drawPixel.x - personHotspot.x,
-                drawPixel.y - personHotspot.y,
+                drawPixel.x - directionArrowCenterX,
+                drawPixel.y - directionArrowCenterY,
                 paint
             )
         }
+        canvas.restore()
+    }
+
+    private fun drawPersonIcon(canvas: Canvas) {
+        val personIconX = drawPixel.x - directionArrowCenterX
+        val personIconY = drawPixel.y - directionArrowCenterY
+        infoWindowBitmap?.let { infoBitmap ->
+            val infoWindowX = (personIconX - (infoBitmap.width / 2.25)).toFloat()
+            val infoWindowY = personIconY - infoBitmap.height - 25
+            canvas.drawBitmap(infoBitmap, infoWindowX, infoWindowY, paint)
+        }
+    }
+
+    private fun drawFlamingRocket(canvas: Canvas, lastFix: Location) {
+        canvas.save()
+        val mapRotation = lastFix.bearing % 360f
+        canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
+
+        val flameSpeed = when (lastFix.speed) {
+            0.0F -> 0F
+            in 0.1..1.0 -> 1F
+            in 1.0..2.0 -> 2F
+            in 2.0..3.0 -> 3F
+            in 3.0..4.0 -> 4F
+            else -> 5F
+        }
+
+        renderFlameAnimation(canvas, flameSpeed)
+
+        directionArrowBitmap?.let {
+            canvas.drawBitmap(
+                it,
+                drawPixel.x - directionArrowCenterX,
+                drawPixel.y - directionArrowCenterY,
+                paint
+            )
+        }
+        canvas.restore()
+    }
+
+    private fun renderFlameAnimation(canvas: Canvas, speed: Float) {
+        val flameSize = speed * 100f
+
+        val flamePaint = Paint().apply {
+            isAntiAlias = true
+            style = Style.FILL
+        }
+
+        flamePaint.shader = LinearGradient(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY,
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize,
+            intArrayOf(Color.RED, Color.parseColor("#FF4500"), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawOval(
+            drawPixel.x - flameSize / 4,
+            drawPixel.y + directionArrowCenterY - 15,
+            drawPixel.x + flameSize / 4,
+            drawPixel.y + directionArrowCenterY + flameSize,
+            flamePaint
+        )
+
+        flamePaint.shader = LinearGradient(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY,
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize * 0.7f,
+            intArrayOf(Color.YELLOW, Color.parseColor("#FFA500"), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.7f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawOval(
+            drawPixel.x - flameSize * 0.7f / 4,
+            drawPixel.y + directionArrowCenterY - 15,
+            drawPixel.x + flameSize * 0.7f / 4,
+            drawPixel.y + directionArrowCenterY + flameSize * 0.7f,
+            flamePaint
+        )
+
+        flamePaint.shader = LinearGradient(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY,
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize * 0.4f,
+            intArrayOf(Color.WHITE, Color.YELLOW, Color.TRANSPARENT),
+            floatArrayOf(0f, 0.4f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawOval(
+            drawPixel.x - flameSize * 0.4f / 4,
+            drawPixel.y + directionArrowCenterY - 15,
+            drawPixel.x + flameSize * 0.4f / 4,
+            drawPixel.y + directionArrowCenterY + flameSize * 0.4f,
+            flamePaint
+        )
+
+        renderSparks(canvas, flameSize, speed)
+    }
+
+    private fun renderSparks(canvas: Canvas, flameSize: Float, speed: Float) {
+        val sparksCount = (speed * 0.2f).toInt().coerceAtLeast(5)
+        val random = Random()
+
+        val sparkPaint = Paint().apply {
+            isAntiAlias = true
+            style = Style.FILL
+            color = Color.YELLOW
+        }
+
+        for (i in 0 until sparksCount) {
+            val xOffset = random.nextFloat() * flameSize - flameSize / 2
+            val yOffset = random.nextFloat() * flameSize + directionArrowCenterY
+            val sparkSize = random.nextFloat() * 5f + 2f
+
+            sparkPaint.alpha = (random.nextFloat() * 200 + 55).toInt()
+
+            canvas.drawCircle(
+                drawPixel.x + xOffset,
+                drawPixel.y + yOffset,
+                sparkSize,
+                sparkPaint
+            )
+        }
+    }
+
+    private fun renderInfoWindow(position: Location) {
+        renderComposableToBitmapSafely(mapView.context, position) { bitmap ->
+            infoWindowBitmap = bitmap
+            mapView.postInvalidate()
+        }
+    }
+
+
+    fun updateInfoWindow(position: Location) {
+        renderInfoWindow(position)
+        mapView.postInvalidate()
     }
 
     override fun onSnapToItem(x: Int, y: Int, snapPoint: Point, mapView: IMapView?): Boolean {
@@ -176,7 +299,6 @@ class CityLensOsmOverlay(
     override fun onDetach(mapView: MapView?) {
         disableMyLocation()
         mapController = null
-        personBitmap = null
         directionArrowBitmap = null
         handler.removeCallbacksAndMessages(null)
         myLocationProvider.destroy()
@@ -230,13 +352,13 @@ class CityLensOsmOverlay(
         return false
     }
 
-    private fun enableFollowLocation() {
+    fun enableFollowLocation() {
         isFollowing = true
         myLocationProvider.lastKnownLocation?.let { setLocation(it) }
         mapView.postInvalidate()
     }
 
-    fun disableFollowLocation() {
+    private fun disableFollowLocation() {
         mapController?.stopAnimation(false)
         isFollowing = false
     }
@@ -264,18 +386,11 @@ class CityLensOsmOverlay(
         } else {
             mapView.postInvalidate()
         }
-    }
-
-    private fun setPersonIcon(drawable: Drawable) {
-        personBitmap = drawable.toBitmap()
+        updateInfoWindow(location)
     }
 
     private fun setDirectionIcon(drawable: Drawable) {
         directionArrowBitmap = drawable.toBitmap()
-    }
-
-    private fun setPersonAnchor() {
-        personBitmap?.let { personHotspot.set(it.width * 0.5f, it.height * 0.5f) }
     }
 
     private fun setDirectionAnchor() {
@@ -297,6 +412,38 @@ class CityLensOsmOverlay(
             }
 
             else -> throw IllegalArgumentException("Unsupported drawable type")
+        }
+    }
+
+    private fun renderComposableToBitmapSafely(
+        context: Context,
+        position: Location,
+        onBitmapReady: (Bitmap) -> Unit
+    ) {
+        val frameLayout = FrameLayout(context)
+        val composeView = ComposeView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            setContent {
+                MapInfoWindowContent(location = position)
+            }
+        }
+
+        frameLayout.addView(composeView)
+
+        val rootView =
+            (context as Activity).window.decorView.findViewById<ViewGroup>(android.R.id.content)
+        rootView.addView(frameLayout)
+
+        frameLayout.doOnLayout {
+            val width = composeView.width
+            val height = composeView.height
+            val bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            frameLayout.draw(canvas)
+
+            rootView.removeView(frameLayout)
+            onBitmapReady(bitmap)
         }
     }
 
