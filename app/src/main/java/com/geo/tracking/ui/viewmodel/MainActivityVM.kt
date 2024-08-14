@@ -4,6 +4,7 @@ import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.geo.tracking.domain.GetLocationUseCase
+import com.google.android.gms.location.LocationRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +33,23 @@ class MainActivityVM @Inject constructor(
                 _viewState.value = ViewState.RevokedPermissions
             }
         }
+    }
+
+    fun changeLocationSettings(distanceFilter: Float, accuracy: String) {
+        createLocationRequest(distanceFilter, accuracy)
+    }
+
+    private fun createLocationRequest(distanceFilter: Float, accuracy: String): LocationRequest {
+        val priority = if (accuracy == "low") {
+            LocationRequest.PRIORITY_LOW_POWER
+        } else {
+            LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        return LocationRequest.Builder(1000)
+            .setMinUpdateDistanceMeters(distanceFilter)
+            .setPriority(priority)
+            .build()
     }
 }
 
