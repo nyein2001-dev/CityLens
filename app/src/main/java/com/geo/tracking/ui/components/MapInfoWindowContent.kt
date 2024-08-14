@@ -40,7 +40,7 @@ import java.util.Locale
 val ledFont = FontFamily(Font(R.font.led))
 
 @Composable
-fun CustomInfoWindow(location: Location) {
+fun MapInfoWindowContent(location: Location) {
 
     val sdf = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault())
     val date = sdf.format(location.time)
