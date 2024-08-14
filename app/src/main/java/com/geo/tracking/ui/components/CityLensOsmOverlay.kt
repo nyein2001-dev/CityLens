@@ -59,7 +59,6 @@ class CityLensOsmOverlay(
     private var isLocationEnabled = false
     private var isFollowing = false
     private var drawAccuracyEnabled = true
-    private val directionHotspot = PointF()
     private var directionArrowCenterX = 0f
     private var directionArrowCenterY = 0f
     private var enableAutoStop = true
@@ -76,7 +75,6 @@ class CityLensOsmOverlay(
 
     private fun initializeIcons() {
         setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.rocket_direction)!!)
-        setPersonAnchor()
         setDirectionAnchor()
     }
 
@@ -125,8 +123,8 @@ class CityLensOsmOverlay(
     }
 
     private fun drawPersonIcon(canvas: Canvas) {
-        val personIconX = drawPixel.x - directionHotspot.x
-        val personIconY = drawPixel.y - directionHotspot.y
+        val personIconX = drawPixel.x - directionArrowCenterX
+        val personIconY = drawPixel.y - directionArrowCenterY
         infoWindowBitmap?.let { infoBitmap ->
             val infoWindowX = (personIconX - (infoBitmap.width / 2.25)).toFloat()
             val infoWindowY = personIconY - infoBitmap.height - 25
@@ -274,10 +272,6 @@ class CityLensOsmOverlay(
 
     private fun setDirectionIcon(drawable: Drawable) {
         directionArrowBitmap = drawable.toBitmap()
-    }
-
-    private fun setPersonAnchor() {
-        directionArrowBitmap?.let { directionHotspot.set(it.width * 0.5f, it.height * 0.5f) }
     }
 
     private fun setDirectionAnchor() {
