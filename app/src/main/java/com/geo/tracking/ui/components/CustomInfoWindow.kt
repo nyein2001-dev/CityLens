@@ -49,7 +49,7 @@ fun CustomInfoWindow(location: Location) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = Modifier.width(290.dp)
+        modifier = Modifier.width(300.dp)
     ) {
         Column(
             modifier = Modifier
@@ -122,7 +122,7 @@ fun InfoRow(icon: ImageVector, label: String, value: String) {
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
-            text = "$label: ",
+            text = "$label ",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.width(100.dp)
@@ -131,7 +131,7 @@ fun InfoRow(icon: ImageVector, label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium.copy(fontFamily = ledFont),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.width(130.dp)
+            modifier = Modifier.width(140.dp)
         )
     }
 }
