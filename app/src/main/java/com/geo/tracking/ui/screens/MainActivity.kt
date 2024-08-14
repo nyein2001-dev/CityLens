@@ -4,13 +4,11 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.location.Location
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,7 +60,6 @@ import org.osmdroid.views.MapView
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

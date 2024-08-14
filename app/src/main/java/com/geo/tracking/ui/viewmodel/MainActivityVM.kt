@@ -1,8 +1,6 @@
 package com.geo.tracking.ui.viewmodel
 
 import android.location.Location
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.geo.tracking.domain.GetLocationUseCase
@@ -10,10 +8,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
-@RequiresApi(Build.VERSION_CODES.S)
 @HiltViewModel
 class MainActivityVM @Inject constructor(
     private val getLocationUseCase: GetLocationUseCase

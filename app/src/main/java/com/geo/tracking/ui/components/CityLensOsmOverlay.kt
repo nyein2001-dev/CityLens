@@ -337,7 +337,7 @@ class CityLensOsmOverlay(
             layoutParams = ViewGroup.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
-                CustomInfoWindow(position = position)
+                CustomInfoWindow(location = position)
             }
         }
 

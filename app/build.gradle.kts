@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.javax.inject)
     implementation(libs.hilt.android)
     implementation(libs.osmdroid.android)
+    implementation(libs.androidx.material.icons.extended)
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity)
