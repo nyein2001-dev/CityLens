@@ -141,7 +141,16 @@ class CityLensOsmOverlay(
         val mapRotation = lastFix.bearing % 360f
         canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
 
-        renderFlameAnimation(canvas, lastFix.speed)
+        val flameSpeed = when (lastFix.speed) {
+            0.0F -> 0F
+            in 0.1..1.0 -> 1F
+            in 1.0..2.0 -> 2F
+            in 2.0..3.0 -> 3F
+            in 3.0..4.0 -> 4F
+            else -> 5F
+        }
+
+        renderFlameAnimation(canvas, flameSpeed)
 
         directionArrowBitmap?.let {
             canvas.drawBitmap(
@@ -155,7 +164,7 @@ class CityLensOsmOverlay(
     }
 
     private fun renderFlameAnimation(canvas: Canvas, speed: Float) {
-        val flameSize = speed * 15f
+        val flameSize = speed * 100f
 
         val flamePaint = Paint().apply {
             isAntiAlias = true
@@ -171,10 +180,11 @@ class CityLensOsmOverlay(
             floatArrayOf(0f, 0.5f, 1f),
             Shader.TileMode.CLAMP
         )
-        canvas.drawCircle(
-            drawPixel.x.toFloat(),
-            drawPixel.y + directionArrowCenterY + flameSize / 2,
-            flameSize,
+        canvas.drawOval(
+            drawPixel.x - flameSize / 4,
+            drawPixel.y + directionArrowCenterY - 15,
+            drawPixel.x + flameSize / 4,
+            drawPixel.y + directionArrowCenterY + flameSize,
             flamePaint
         )
 
@@ -187,10 +197,11 @@ class CityLensOsmOverlay(
             floatArrayOf(0f, 0.7f, 1f),
             Shader.TileMode.CLAMP
         )
-        canvas.drawCircle(
-            drawPixel.x.toFloat(),
-            drawPixel.y + directionArrowCenterY + flameSize * 0.7f / 2,
-            flameSize * 0.7f,
+        canvas.drawOval(
+            drawPixel.x - flameSize * 0.7f / 4,
+            drawPixel.y + directionArrowCenterY - 15,
+            drawPixel.x + flameSize * 0.7f / 4,
+            drawPixel.y + directionArrowCenterY + flameSize * 0.7f,
             flamePaint
         )
 
@@ -203,10 +214,11 @@ class CityLensOsmOverlay(
             floatArrayOf(0f, 0.4f, 1f),
             Shader.TileMode.CLAMP
         )
-        canvas.drawCircle(
-            drawPixel.x.toFloat(),
-            drawPixel.y + directionArrowCenterY + flameSize * 0.4f / 2,
-            flameSize * 0.4f,
+        canvas.drawOval(
+            drawPixel.x - flameSize * 0.4f / 4,
+            drawPixel.y + directionArrowCenterY - 15,
+            drawPixel.x + flameSize * 0.4f / 4,
+            drawPixel.y + directionArrowCenterY + flameSize * 0.4f,
             flamePaint
         )
 
@@ -238,7 +250,6 @@ class CityLensOsmOverlay(
             )
         }
     }
-
 
     private fun renderInfoWindow(position: Location) {
         renderComposableToBitmapSafely(mapView.context, position) { bitmap ->
