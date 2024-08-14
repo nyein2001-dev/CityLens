@@ -68,6 +68,7 @@ class CityLensOsmOverlay(
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
     private var location: Location = initialPoint
+    private var lastLoc: Location = initialPoint
     private val geoPoint = GeoPoint(initialPoint.latitude, initialPoint.longitude)
     private var isLocationEnabled = false
     private var isFollowing = false
@@ -414,15 +415,22 @@ class CityLensOsmOverlay(
         mapView.postInvalidate()
     }
 
-    private fun setLocation(location: Location) {
-        this.location = location
-        geoPoint.setCoords(location.latitude, location.longitude)
-        if (isFollowing) {
-            mapController?.animateTo(geoPoint)
-        } else {
-            mapView.postInvalidate()
+    private fun setLocation(loc: Location) {
+        val distance = lastLoc.distanceTo(loc)
+        if (distance > 10.0F && distance < 50.0F) {
+            this.location = loc
+            lastLoc = loc
+            geoPoint.setCoords(location.latitude, location.longitude)
+            if (isFollowing) {
+                mapController?.animateTo(geoPoint)
+            } else {
+                mapView.postInvalidate()
+            }
+            updateInfoWindow(location)
+        } else if (distance > 10.0F) {
+            lastLoc = loc
         }
-        updateInfoWindow(location)
+
     }
 
     private fun setDirectionIcon(drawable: Drawable) {
