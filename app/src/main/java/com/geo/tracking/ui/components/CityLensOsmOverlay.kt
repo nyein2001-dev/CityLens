@@ -50,7 +50,7 @@ class CityLensOsmOverlay(
         setARGB(0, 100, 100, 255)
         isAntiAlias = true
     }
-    private var personBitmap: Bitmap? = null
+
     private var infoWindowBitmap: Bitmap? = null
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
@@ -59,7 +59,7 @@ class CityLensOsmOverlay(
     private var isLocationEnabled = false
     private var isFollowing = false
     private var drawAccuracyEnabled = true
-    private val personHotspot = PointF()
+    private val directionHotspot = PointF()
     private var directionArrowCenterX = 0f
     private var directionArrowCenterY = 0f
     private var enableAutoStop = true
@@ -75,8 +75,7 @@ class CityLensOsmOverlay(
     }
 
     private fun initializeIcons() {
-        setPersonIcon(ContextCompat.getDrawable(mapView.context, R.drawable.baseline_circle_24)!!)
-        setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.arrow)!!)
+        setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.rocket_direction)!!)
         setPersonAnchor()
         setDirectionAnchor()
     }
@@ -111,46 +110,27 @@ class CityLensOsmOverlay(
     }
 
     private fun drawDirectionArrow(canvas: Canvas, lastFix: Location) {
-        if (lastFix.hasBearing()) {
-            canvas.save()
-            val mapRotation = lastFix.bearing % 360f
-            canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
-            directionArrowBitmap?.let {
-                canvas.drawBitmap(
-                    it,
-                    drawPixel.x - directionArrowCenterX,
-                    drawPixel.y - directionArrowCenterY,
-                    paint
-                )
-            }
-            canvas.restore()
-        } else {
-            canvas.save()
-            canvas.rotate(-mapView.mapOrientation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
-            personBitmap?.let {
-                canvas.drawBitmap(
-                    it,
-                    drawPixel.x - personHotspot.x,
-                    drawPixel.y - personHotspot.y,
-                    paint
-                )
-            }
-            canvas.restore()
+        canvas.save()
+        val mapRotation = lastFix.bearing % 360f
+        canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
+        directionArrowBitmap?.let {
+            canvas.drawBitmap(
+                it,
+                drawPixel.x - directionArrowCenterX,
+                drawPixel.y - directionArrowCenterY,
+                paint
+            )
         }
+        canvas.restore()
     }
 
     private fun drawPersonIcon(canvas: Canvas) {
-        personBitmap?.let {
-            val personIconX = drawPixel.x - personHotspot.x
-            val personIconY = drawPixel.y - personHotspot.y
-
-            canvas.drawBitmap(it, personIconX, personIconY, paint)
-
-            infoWindowBitmap?.let { infoBitmap ->
-                val infoWindowX = (personIconX - (infoBitmap.width / 2.25)).toFloat()
-                val infoWindowY = personIconY - infoBitmap.height - 10
-                canvas.drawBitmap(infoBitmap, infoWindowX, infoWindowY, paint)
-            }
+        val personIconX = drawPixel.x - directionHotspot.x
+        val personIconY = drawPixel.y - directionHotspot.y
+        infoWindowBitmap?.let { infoBitmap ->
+            val infoWindowX = (personIconX - (infoBitmap.width / 2.25)).toFloat()
+            val infoWindowY = personIconY - infoBitmap.height - 25
+            canvas.drawBitmap(infoBitmap, infoWindowX, infoWindowY, paint)
         }
     }
 
@@ -202,7 +182,6 @@ class CityLensOsmOverlay(
     override fun onDetach(mapView: MapView?) {
         disableMyLocation()
         mapController = null
-        personBitmap = null
         directionArrowBitmap = null
         handler.removeCallbacksAndMessages(null)
         myLocationProvider.destroy()
@@ -293,16 +272,12 @@ class CityLensOsmOverlay(
         updateInfoWindow(location)
     }
 
-    private fun setPersonIcon(drawable: Drawable) {
-        personBitmap = drawable.toBitmap()
-    }
-
     private fun setDirectionIcon(drawable: Drawable) {
         directionArrowBitmap = drawable.toBitmap()
     }
 
     private fun setPersonAnchor() {
-        personBitmap?.let { personHotspot.set(it.width * 0.5f, it.height * 0.5f) }
+        directionArrowBitmap?.let { directionHotspot.set(it.width * 0.5f, it.height * 0.5f) }
     }
 
     private fun setDirectionAnchor() {
