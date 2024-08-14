@@ -3,7 +3,6 @@ package com.geo.tracking.ui.components
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Bitmap.Config
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -15,6 +14,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.VectorDrawable
 import android.location.Location
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Menu
@@ -53,6 +53,16 @@ class CityLensOsmOverlay(
         setARGB(0, 100, 100, 255)
         isAntiAlias = true
     }
+
+    private var lastWaveUpdateTime = 0L
+    private val waveDuration = 2000L
+    private val waveMaxAlpha = 150
+    private val wavePaint = Paint().apply {
+        setARGB(0, 100, 100, 255)
+        isAntiAlias = true
+        style = Style.FILL
+    }
+    private val frameDelay = 16L
 
     private var infoWindowBitmap: Bitmap? = null
     private var directionArrowBitmap: Bitmap? = null
@@ -108,6 +118,27 @@ class CityLensOsmOverlay(
             circlePaint.alpha = 150
             circlePaint.style = Style.STROKE
             canvas.drawCircle(drawPixel.x.toFloat(), drawPixel.y.toFloat(), radius, circlePaint)
+
+            if (lastWaveUpdateTime == 0L) {
+                lastWaveUpdateTime = System.currentTimeMillis()
+            }
+
+            val currentTime = System.currentTimeMillis()
+            val elapsedTime = currentTime - lastWaveUpdateTime
+            var progress = elapsedTime.toFloat() / waveDuration
+
+            if (progress >= 1.0f) {
+                lastWaveUpdateTime = currentTime
+                progress = 0f
+            }
+
+            val waveRadius = progress * radius
+            val alpha = (1.0f - progress) * waveMaxAlpha
+            wavePaint.alpha = alpha.toInt()
+
+            canvas.drawCircle(drawPixel.x.toFloat(), drawPixel.y.toFloat(), waveRadius, wavePaint)
+
+            mapView.postInvalidateDelayed(frameDelay)
         }
     }
 
@@ -368,13 +399,18 @@ class CityLensOsmOverlay(
             isLocationEnabled = it
             myLocationProvider.lastKnownLocation?.let { loc -> setLocation(loc) }
             mapView.postInvalidate()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                !handler.hasCallbacks(animationRunnable)
+            ) {
+                handler.post(animationRunnable)
+            }
         }
     }
 
     private fun disableMyLocation() {
         isLocationEnabled = false
         myLocationProvider.stopLocationProvider()
-        handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacks(animationRunnable)
         mapView.postInvalidate()
     }
 
@@ -404,7 +440,8 @@ class CityLensOsmOverlay(
         return when (this) {
             is BitmapDrawable -> this.bitmap
             is VectorDrawable -> {
-                val bitmap = Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Config.ARGB_8888)
+                val bitmap =
+                    Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bitmap)
                 setBounds(0, 0, canvas.width, canvas.height)
                 draw(canvas)
@@ -438,7 +475,7 @@ class CityLensOsmOverlay(
         frameLayout.doOnLayout {
             val width = composeView.width
             val height = composeView.height
-            val bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             frameLayout.draw(canvas)
 
@@ -459,5 +496,12 @@ class CityLensOsmOverlay(
             }
             runOnFirstFix.clear()
         }, Any(), 0)
+    }
+
+    private val animationRunnable = object : Runnable {
+        override fun run() {
+            mapView.postInvalidate()
+            handler.postDelayed(this, frameDelay)
+        }
     }
 }
