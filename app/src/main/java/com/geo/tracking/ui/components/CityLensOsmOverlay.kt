@@ -108,7 +108,7 @@ class CityLensOsmOverlay(
 
     private fun drawAccuracyCircle(canvas: Canvas, lastFix: Location, projection: Projection) {
         if (drawAccuracyEnabled) {
-            val radius = lastFix.accuracy / TileSystem.GroundResolution(
+            val radius = (lastFix.accuracy * 5) / TileSystem.GroundResolution(
                 lastFix.latitude,
                 projection.zoomLevel
             ).toFloat()
