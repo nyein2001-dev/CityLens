@@ -5,9 +5,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Paint.Style
 import android.graphics.Point
+import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.VectorDrawable
@@ -37,6 +40,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import java.util.LinkedList
+import java.util.Random
 
 class CityLensOsmOverlay(
     initialPoint: Location,
@@ -88,6 +92,7 @@ class CityLensOsmOverlay(
         drawAccuracyCircle(canvas, lastFix, projection)
         drawDirectionArrow(canvas, lastFix)
         drawPersonIcon(canvas)
+        drawFlamingRocket(canvas, lastFix)
     }
 
     private fun drawAccuracyCircle(canvas: Canvas, lastFix: Location, projection: Projection) {
@@ -130,6 +135,110 @@ class CityLensOsmOverlay(
             canvas.drawBitmap(infoBitmap, infoWindowX, infoWindowY, paint)
         }
     }
+
+    private fun drawFlamingRocket(canvas: Canvas, lastFix: Location) {
+        canvas.save()
+        val mapRotation = lastFix.bearing % 360f
+        canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
+
+        renderFlameAnimation(canvas, lastFix.speed)
+
+        directionArrowBitmap?.let {
+            canvas.drawBitmap(
+                it,
+                drawPixel.x - directionArrowCenterX,
+                drawPixel.y - directionArrowCenterY,
+                paint
+            )
+        }
+        canvas.restore()
+    }
+
+    private fun renderFlameAnimation(canvas: Canvas, speed: Float) {
+        val flameSize = speed * 15f
+
+        val flamePaint = Paint().apply {
+            isAntiAlias = true
+            style = Style.FILL
+        }
+
+        flamePaint.shader = LinearGradient(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY,
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize,
+            intArrayOf(Color.RED, Color.parseColor("#FF4500"), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize / 2,
+            flameSize,
+            flamePaint
+        )
+
+        flamePaint.shader = LinearGradient(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY,
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize * 0.7f,
+            intArrayOf(Color.YELLOW, Color.parseColor("#FFA500"), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.7f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize * 0.7f / 2,
+            flameSize * 0.7f,
+            flamePaint
+        )
+
+        flamePaint.shader = LinearGradient(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY,
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize * 0.4f,
+            intArrayOf(Color.WHITE, Color.YELLOW, Color.TRANSPARENT),
+            floatArrayOf(0f, 0.4f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(
+            drawPixel.x.toFloat(),
+            drawPixel.y + directionArrowCenterY + flameSize * 0.4f / 2,
+            flameSize * 0.4f,
+            flamePaint
+        )
+
+        renderSparks(canvas, flameSize, speed)
+    }
+
+    private fun renderSparks(canvas: Canvas, flameSize: Float, speed: Float) {
+        val sparksCount = (speed * 0.2f).toInt().coerceAtLeast(5)
+        val random = Random()
+
+        val sparkPaint = Paint().apply {
+            isAntiAlias = true
+            style = Style.FILL
+            color = Color.YELLOW
+        }
+
+        for (i in 0 until sparksCount) {
+            val xOffset = random.nextFloat() * flameSize - flameSize / 2
+            val yOffset = random.nextFloat() * flameSize + directionArrowCenterY
+            val sparkSize = random.nextFloat() * 5f + 2f
+
+            sparkPaint.alpha = (random.nextFloat() * 200 + 55).toInt()
+
+            canvas.drawCircle(
+                drawPixel.x + xOffset,
+                drawPixel.y + yOffset,
+                sparkSize,
+                sparkPaint
+            )
+        }
+    }
+
 
     private fun renderInfoWindow(position: Location) {
         renderComposableToBitmapSafely(mapView.context, position) { bitmap ->
