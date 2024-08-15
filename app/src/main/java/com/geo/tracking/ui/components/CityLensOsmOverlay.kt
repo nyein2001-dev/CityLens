@@ -3,7 +3,6 @@ package com.geo.tracking.ui.components
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Bitmap.Config
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -15,6 +14,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.VectorDrawable
 import android.location.Location
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Menu
@@ -30,12 +30,15 @@ import androidx.core.view.doOnLayout
 import com.geo.tracking.R
 import org.osmdroid.api.IMapController
 import org.osmdroid.api.IMapView
+import org.osmdroid.events.MapAdapter
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.TileSystem
 import org.osmdroid.views.MapView
 import org.osmdroid.views.Projection
 import org.osmdroid.views.overlay.IOverlayMenuProvider
 import org.osmdroid.views.overlay.Overlay
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
@@ -54,10 +57,23 @@ class CityLensOsmOverlay(
         isAntiAlias = true
     }
 
+    private var lastWaveUpdateTime = 0L
+    private val waveDuration = 2000L
+    private val waveMaxAlpha = 150
+    private val wavePaint = Paint().apply {
+        setARGB(0, 100, 100, 255)
+        isAntiAlias = true
+        style = Style.FILL
+    }
+    private val frameDelay = 16L
+    private val locationList = mutableListOf<Location>()
+    private var polyline: Polyline? = null
+
     private var infoWindowBitmap: Bitmap? = null
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
     private var location: Location = initialPoint
+    private var lastLoc: Location = initialPoint
     private val geoPoint = GeoPoint(initialPoint.latitude, initialPoint.longitude)
     private var isLocationEnabled = false
     private var isFollowing = false
@@ -79,6 +95,16 @@ class CityLensOsmOverlay(
     private fun initializeIcons() {
         setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.rocket_direction)!!)
         setDirectionAnchor()
+        setupMap()
+    }
+
+    private fun setupMap() {
+        mapView.addMapListener(object : MapAdapter() {
+            override fun onZoom(event: ZoomEvent?): Boolean {
+                updatePolylineWidth()
+                return super.onZoom(event)
+            }
+        })
     }
 
     override fun draw(canvas: Canvas, projection: Projection) {
@@ -97,7 +123,7 @@ class CityLensOsmOverlay(
 
     private fun drawAccuracyCircle(canvas: Canvas, lastFix: Location, projection: Projection) {
         if (drawAccuracyEnabled) {
-            val radius = lastFix.accuracy / TileSystem.GroundResolution(
+            val radius = (lastFix.accuracy * 5) / TileSystem.GroundResolution(
                 lastFix.latitude,
                 projection.zoomLevel
             ).toFloat()
@@ -108,6 +134,27 @@ class CityLensOsmOverlay(
             circlePaint.alpha = 150
             circlePaint.style = Style.STROKE
             canvas.drawCircle(drawPixel.x.toFloat(), drawPixel.y.toFloat(), radius, circlePaint)
+
+            if (lastWaveUpdateTime == 0L) {
+                lastWaveUpdateTime = System.currentTimeMillis()
+            }
+
+            val currentTime = System.currentTimeMillis()
+            val elapsedTime = currentTime - lastWaveUpdateTime
+            var progress = elapsedTime.toFloat() / waveDuration
+
+            if (progress >= 1.0f) {
+                lastWaveUpdateTime = currentTime
+                progress = 0f
+            }
+
+            val waveRadius = progress * radius
+            val alpha = (1.0f - progress) * waveMaxAlpha
+            wavePaint.alpha = alpha.toInt()
+
+            canvas.drawCircle(drawPixel.x.toFloat(), drawPixel.y.toFloat(), waveRadius, wavePaint)
+
+            mapView.postInvalidateDelayed(frameDelay)
         }
     }
 
@@ -141,13 +188,10 @@ class CityLensOsmOverlay(
         val mapRotation = lastFix.bearing % 360f
         canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
 
-        val flameSpeed = when (lastFix.speed) {
-            0.0F -> 0F
-            in 0.1..1.0 -> 1F
-            in 1.0..2.0 -> 2F
-            in 2.0..3.0 -> 3F
-            in 3.0..4.0 -> 4F
-            else -> 5F
+        val flameSpeed = if (lastFix.speed < 0.5) {
+            0.05F
+        } else {
+            lastFix.speed / 10
         }
 
         renderFlameAnimation(canvas, flameSpeed)
@@ -368,25 +412,64 @@ class CityLensOsmOverlay(
             isLocationEnabled = it
             myLocationProvider.lastKnownLocation?.let { loc -> setLocation(loc) }
             mapView.postInvalidate()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                !handler.hasCallbacks(animationRunnable)
+            ) {
+                handler.post(animationRunnable)
+            }
         }
     }
 
     private fun disableMyLocation() {
         isLocationEnabled = false
         myLocationProvider.stopLocationProvider()
-        handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacks(animationRunnable)
         mapView.postInvalidate()
     }
 
-    private fun setLocation(location: Location) {
-        this.location = location
-        geoPoint.setCoords(location.latitude, location.longitude)
-        if (isFollowing) {
-            mapController?.animateTo(geoPoint)
-        } else {
-            mapView.postInvalidate()
+    private fun setLocation(loc: Location) {
+        val distance = lastLoc.distanceTo(loc)
+        if (distance > 10.0F && distance < 50.0F) {
+            this.location = loc
+            lastLoc = loc
+            geoPoint.setCoords(location.latitude, location.longitude)
+            locationList.add(loc)  // Add to the location list
+
+            if (isFollowing) {
+                mapController?.animateTo(geoPoint)
+            } else {
+                mapView.postInvalidate()
+            }
+            updateInfoWindow(location)
+            updatePolyline()  // Update the polyline
+        } else if (distance > 10.0F) {
+            lastLoc = loc
         }
-        updateInfoWindow(location)
+    }
+
+    private fun updatePolyline() {
+        if (locationList.isNotEmpty()) {
+            if (polyline == null) {
+                polyline = Polyline().apply {
+                    outlinePaint.color = Color.BLUE
+                    mapView.overlays.add(this)
+                }
+            }
+
+            polyline?.apply {
+                setPoints(locationList.map { GeoPoint(it.latitude, it.longitude) })
+
+                // Adjust polyline width based on zoom level
+                outlinePaint.strokeWidth = mapView.zoomLevelDouble.toFloat()
+            }
+
+            mapView.invalidate()  // Refresh the map view
+        }
+    }
+
+    private fun updatePolylineWidth() {
+        polyline?.outlinePaint?.strokeWidth = mapView.zoomLevelDouble.toFloat()
+        mapView.invalidate()  // Refresh the map view
     }
 
     private fun setDirectionIcon(drawable: Drawable) {
@@ -404,7 +487,8 @@ class CityLensOsmOverlay(
         return when (this) {
             is BitmapDrawable -> this.bitmap
             is VectorDrawable -> {
-                val bitmap = Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Config.ARGB_8888)
+                val bitmap =
+                    Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bitmap)
                 setBounds(0, 0, canvas.width, canvas.height)
                 draw(canvas)
@@ -438,7 +522,7 @@ class CityLensOsmOverlay(
         frameLayout.doOnLayout {
             val width = composeView.width
             val height = composeView.height
-            val bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             frameLayout.draw(canvas)
 
@@ -459,5 +543,12 @@ class CityLensOsmOverlay(
             }
             runOnFirstFix.clear()
         }, Any(), 0)
+    }
+
+    private val animationRunnable = object : Runnable {
+        override fun run() {
+            mapView.postInvalidate()
+            handler.postDelayed(this, frameDelay)
+        }
     }
 }

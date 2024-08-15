@@ -49,7 +49,7 @@ fun MapInfoWindowContent(location: Location) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = Modifier.width(300.dp)
+        modifier = Modifier.width(290.dp)
     ) {
         Column(
             modifier = Modifier
@@ -75,8 +75,8 @@ fun MapInfoWindowContent(location: Location) {
             )
             InfoRow(
                 icon = Icons.Default.Height,
-                label = "Altitude",
-                value = "${location.altitude} m"
+                label = "Altitude (m)",
+                value = "${location.altitude}"
             )
             InfoRow(
                 icon = Icons.Default.MyLocation,
@@ -131,7 +131,7 @@ fun InfoRow(icon: ImageVector, label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium.copy(fontFamily = ledFont),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.width(140.dp)
+            modifier = Modifier.width(130.dp)
         )
     }
 }
