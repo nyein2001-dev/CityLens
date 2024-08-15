@@ -74,7 +74,7 @@ class MapActivity(
     private var directionArrowBitmap: Bitmap? = null
     private var mapController: IMapController? = mapView.controller
     private var location: Location = initialPoint
-    private var lastLoc: Location = initialPoint
+    private var lastLoc: Location? = null
     private val geoPoint = GeoPoint(initialPoint.latitude, initialPoint.longitude)
     private var isLocationEnabled = false
     private var isFollowing = false
@@ -429,24 +429,46 @@ class MapActivity(
     }
 
     private fun setLocation(loc: Location) {
-        val distance = lastLoc.distanceTo(loc)
-        if (distance > 10.0F && distance < 50.0F) {
+        val lastIndex = locationList.size - 1
+
+        val distance =
+            lastLoc?.distanceTo(loc) ?: locationList.getOrNull(lastIndex)?.distanceTo(loc) ?: 0.0F
+        val firstDistance =
+            if (lastIndex >= 1) locationList[lastIndex - 1].distanceTo(loc) else 30.0F
+        val secondDistance =
+            if (lastIndex >= 2) locationList[lastIndex - 2].distanceTo(loc) else 40.0F
+        val thirdDistance =
+            if (lastIndex >= 3) locationList[lastIndex - 3].distanceTo(loc) else 50.0F
+
+        if (distance in 10.0F..30.0F &&
+            firstDistance > 20.0F &&
+            secondDistance > 30.0F &&
+            thirdDistance > 40.0F
+        ) {
             this.location = loc
-            lastLoc = loc
+            lastLoc = null
             geoPoint.setCoords(location.latitude, location.longitude)
-            locationList.add(loc)  // Add to the location list
+            locationList.add(loc)
 
             if (isFollowing) {
                 mapController?.animateTo(geoPoint)
+                mapController?.setCenter(geoPoint)
             } else {
                 mapView.postInvalidate()
             }
+
             updateInfoWindow(location)
-            updatePolyline()  // Update the polyline
+            updatePolyline()
         } else if (distance > 10.0F) {
-            lastLoc = loc
+            if (locationList.isEmpty()) {
+                locationList.add(loc)
+            } else {
+                lastLoc = loc
+
+            }
         }
     }
+
 
     private fun updatePolyline() {
         if (locationList.isNotEmpty()) {
@@ -459,18 +481,16 @@ class MapActivity(
 
             polyline?.apply {
                 setPoints(locationList.map { GeoPoint(it.latitude, it.longitude) })
-
-                // Adjust polyline width based on zoom level
                 outlinePaint.strokeWidth = mapView.zoomLevelDouble.toFloat()
             }
 
-            mapView.invalidate()  // Refresh the map view
+            mapView.invalidate()
         }
     }
 
     private fun updatePolylineWidth() {
         polyline?.outlinePaint?.strokeWidth = mapView.zoomLevelDouble.toFloat()
-        mapView.invalidate()  // Refresh the map view
+        mapView.invalidate()
     }
 
     private fun setDirectionIcon(drawable: Drawable) {
