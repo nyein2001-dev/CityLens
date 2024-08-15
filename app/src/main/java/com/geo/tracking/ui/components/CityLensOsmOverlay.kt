@@ -188,13 +188,10 @@ class CityLensOsmOverlay(
         val mapRotation = lastFix.bearing % 360f
         canvas.rotate(mapRotation, drawPixel.x.toFloat(), drawPixel.y.toFloat())
 
-        val flameSpeed = when (lastFix.speed) {
-            0.0F -> 0.1F
-            in 0.1..1.0 -> 1F
-            in 1.0..2.0 -> 2F
-            in 2.0..3.0 -> 3F
-            in 3.0..4.0 -> 4F
-            else -> 5F
+        val flameSpeed = if (lastFix.speed < 0.5) {
+            0.05F
+        } else {
+            lastFix.speed / 10
         }
 
         renderFlameAnimation(canvas, flameSpeed)

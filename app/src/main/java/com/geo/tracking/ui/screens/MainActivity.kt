@@ -195,7 +195,7 @@ fun MainScreen(currentPosition: Location?) {
                 setMultiTouchControls(true)
                 minZoomLevel = 5.0
                 maxZoomLevel = 20.0
-                controller.setZoom(17.0)
+                controller.setZoom(16.5)
                 zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
                 currentPosition?.let { position ->
                     controller.setCenter(GeoPoint(position.latitude, position.longitude))
