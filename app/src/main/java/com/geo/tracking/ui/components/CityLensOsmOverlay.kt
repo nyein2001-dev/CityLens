@@ -30,12 +30,15 @@ import androidx.core.view.doOnLayout
 import com.geo.tracking.R
 import org.osmdroid.api.IMapController
 import org.osmdroid.api.IMapView
+import org.osmdroid.events.MapAdapter
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.util.TileSystem
 import org.osmdroid.views.MapView
 import org.osmdroid.views.Projection
 import org.osmdroid.views.overlay.IOverlayMenuProvider
 import org.osmdroid.views.overlay.Overlay
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
@@ -63,6 +66,8 @@ class CityLensOsmOverlay(
         style = Style.FILL
     }
     private val frameDelay = 16L
+    private val locationList = mutableListOf<Location>()
+    private var polyline: Polyline? = null
 
     private var infoWindowBitmap: Bitmap? = null
     private var directionArrowBitmap: Bitmap? = null
@@ -90,6 +95,16 @@ class CityLensOsmOverlay(
     private fun initializeIcons() {
         setDirectionIcon(ContextCompat.getDrawable(mapView.context, R.drawable.rocket_direction)!!)
         setDirectionAnchor()
+        setupMap()
+    }
+
+    private fun setupMap() {
+        mapView.addMapListener(object : MapAdapter() {
+            override fun onZoom(event: ZoomEvent?): Boolean {
+                updatePolylineWidth()
+                return super.onZoom(event)
+            }
+        })
     }
 
     override fun draw(canvas: Canvas, projection: Projection) {
@@ -421,16 +436,43 @@ class CityLensOsmOverlay(
             this.location = loc
             lastLoc = loc
             geoPoint.setCoords(location.latitude, location.longitude)
+            locationList.add(loc)  // Add to the location list
+
             if (isFollowing) {
                 mapController?.animateTo(geoPoint)
             } else {
                 mapView.postInvalidate()
             }
             updateInfoWindow(location)
+            updatePolyline()  // Update the polyline
         } else if (distance > 10.0F) {
             lastLoc = loc
         }
+    }
 
+    private fun updatePolyline() {
+        if (locationList.isNotEmpty()) {
+            if (polyline == null) {
+                polyline = Polyline().apply {
+                    outlinePaint.color = Color.BLUE
+                    mapView.overlays.add(this)
+                }
+            }
+
+            polyline?.apply {
+                setPoints(locationList.map { GeoPoint(it.latitude, it.longitude) })
+
+                // Adjust polyline width based on zoom level
+                outlinePaint.strokeWidth = mapView.zoomLevelDouble.toFloat()
+            }
+
+            mapView.invalidate()  // Refresh the map view
+        }
+    }
+
+    private fun updatePolylineWidth() {
+        polyline?.outlinePaint?.strokeWidth = mapView.zoomLevelDouble.toFloat()
+        mapView.invalidate()  // Refresh the map view
     }
 
     private fun setDirectionIcon(drawable: Drawable) {
