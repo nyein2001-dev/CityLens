@@ -44,7 +44,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geo.tracking.extension.hasLocationPermission
-import com.geo.tracking.ui.components.CityLensOsmOverlay
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.geo.tracking.ui.viewmodel.MainActivityVM
 import com.geo.tracking.ui.viewmodel.PermissionEvent
@@ -202,7 +201,7 @@ fun MainScreen(currentPosition: Location?) {
                 }
                 overlays.add(
                     currentPosition?.let { it1 ->
-                        CityLensOsmOverlay(it1, this).apply {
+                        MapActivity(it1, this).apply {
                             enableFollowLocation()
                             enableMyLocation()
                             updateInfoWindow(it1)

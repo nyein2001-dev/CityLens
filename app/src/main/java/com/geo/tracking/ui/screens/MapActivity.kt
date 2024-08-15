@@ -1,4 +1,4 @@
-package com.geo.tracking.ui.components
+package com.geo.tracking.ui.screens
 
 import android.app.Activity
 import android.content.Context
@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import com.geo.tracking.R
+import com.geo.tracking.ui.components.MapInfoWindowContent
 import org.osmdroid.api.IMapController
 import org.osmdroid.api.IMapView
 import org.osmdroid.events.MapAdapter
@@ -45,7 +46,7 @@ import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
 import java.util.LinkedList
 import java.util.Random
 
-class CityLensOsmOverlay(
+class MapActivity(
     initialPoint: Location,
     private val mapView: MapView,
     private var myLocationProvider: IMyLocationProvider = GpsMyLocationProvider(mapView.context)
