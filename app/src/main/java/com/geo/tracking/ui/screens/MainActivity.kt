@@ -44,7 +44,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geo.tracking.extension.hasLocationPermission
-import com.geo.tracking.ui.components.CityLensOsmOverlay
 import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.geo.tracking.ui.viewmodel.MainActivityVM
 import com.geo.tracking.ui.viewmodel.PermissionEvent
@@ -195,14 +194,14 @@ fun MainScreen(currentPosition: Location?) {
                 setMultiTouchControls(true)
                 minZoomLevel = 5.0
                 maxZoomLevel = 20.0
-                controller.setZoom(16.5)
+                controller.setZoom(17.0)
                 zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
                 currentPosition?.let { position ->
                     controller.setCenter(GeoPoint(position.latitude, position.longitude))
                 }
                 overlays.add(
                     currentPosition?.let { it1 ->
-                        CityLensOsmOverlay(it1, this).apply {
+                        MapActivity(it1, this).apply {
                             enableFollowLocation()
                             enableMyLocation()
                             updateInfoWindow(it1)
