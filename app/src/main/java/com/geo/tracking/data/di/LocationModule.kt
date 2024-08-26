@@ -1,4 +1,4 @@
-package com.geo.tracking.di
+package com.geo.tracking.data.di
 
 import android.content.Context
 import android.provider.CallLog.Locations
