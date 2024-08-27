@@ -48,6 +48,7 @@ import com.geo.tracking.ui.theme.GeoTrackingTheme
 import com.geo.tracking.ui.viewmodel.MainActivityVM
 import com.geo.tracking.ui.viewmodel.PermissionEvent
 import com.geo.tracking.ui.viewmodel.ViewState
+import com.geo.tracking.utils.SharedPreference
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
@@ -55,6 +56,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import java.util.UUID
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -62,6 +64,14 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val sharedPreference = SharedPreference(this)
+        val storedRiderId = sharedPreference.getRiderId()
+
+        if (storedRiderId.isEmpty()) {
+            val riderId: String = UUID.randomUUID().toString()
+            sharedPreference.setRiderId(riderId)
+        }
 
         val locationViewModel: MainActivityVM by viewModels()
 

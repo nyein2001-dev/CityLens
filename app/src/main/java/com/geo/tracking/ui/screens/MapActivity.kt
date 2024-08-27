@@ -437,13 +437,13 @@ class MapActivity(
             if (lastIndex >= 1) locationList[lastIndex - 1].distanceTo(loc) else 30.0F
         val secondDistance =
             if (lastIndex >= 2) locationList[lastIndex - 2].distanceTo(loc) else 40.0F
-        val thirdDistance =
-            if (lastIndex >= 3) locationList[lastIndex - 3].distanceTo(loc) else 50.0F
+//        val thirdDistance =
+//            if (lastIndex >= 3) locationList[lastIndex - 3].distanceTo(loc) else 50.0F
 
         if (distance in 10.0F..30.0F &&
             firstDistance > 20.0F &&
-            secondDistance > 30.0F &&
-            thirdDistance > 40.0F
+            secondDistance > 30.0F //&&
+//            thirdDistance > 40.0F
         ) {
             this.location = loc
             lastLoc = null
