@@ -28,6 +28,9 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import com.geo.tracking.R
+import com.geo.tracking.data.models.Anomaly
+import com.geo.tracking.data.models.LocationData
+import com.geo.tracking.data.models.TripStatus
 import com.geo.tracking.ui.components.MapInfoWindowContent
 import org.osmdroid.api.IMapController
 import org.osmdroid.api.IMapView
@@ -43,6 +46,7 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider
+import java.time.LocalDateTime
 import java.util.LinkedList
 import java.util.Random
 
@@ -88,6 +92,31 @@ class MapActivity(
     private val runOnFirstFix = LinkedList<Runnable>()
     private var optionsMenuEnabled = true
     private var wasEnabledOnPause = false
+
+
+    //trip riding variables
+    private var onGoing = true
+    private var tripId = ""
+    private var userId = ""
+    private var vehicleId = ""
+    private var startTime: LocalDateTime? = null
+    private var endTime: LocalDateTime? = null
+    private var startLocation: LocationData? = null
+    private var currentLocation: LocationData? = null
+    private var destinationLocation: LocationData? = null
+    private var locationHistory: List<LocationData> = emptyList()
+    private var distanceTravelled: Double = 0.0
+    private var tripStatus: TripStatus? = null
+    private var timestamp: Long = 0
+    private var batteryLevel: Int = 0
+    private var networkType: String = ""
+    private var deviceOrientation: String = ""
+    private var tripDuration: Long = 0
+    private var busOccupancy: Int = 0
+    private var predictedTravelTime: Long = 0
+    private var predictedBusOccupancy: Int = 0
+    private var predictedRoute: List<LocationData> = emptyList()
+    private var anomaliesDetected: List<Anomaly> = emptyList()
 
     init {
         initializeIcons()

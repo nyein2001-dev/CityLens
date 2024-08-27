@@ -17,7 +17,9 @@ data class LocationData(
     val satelliteCount: Int?,
     val isInTunnel: Boolean?,
     val isAboveGround: Boolean?,
-    val placeMarkList: List<PlaceMark>
+    val placeMarkList: List<PlaceMark>,
+    val weatherConditions: String,
+    val trafficConditions: String
 )
 
 

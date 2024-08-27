@@ -20,7 +20,6 @@ class SharedPreference(context: Context) {
                 is String -> putString(key, value)
                 is Double -> putFloat(key, value.toFloat())
                 is Boolean -> putBoolean(key, value)
-                // Handle other types as needed
                 else -> throw IllegalArgumentException("Unsupported type")
             }
             apply()
@@ -32,7 +31,6 @@ class SharedPreference(context: Context) {
             String::class -> preferences.getString(key, null) as T?
             Float::class -> preferences.getFloat(key, 0.0f) as T?
             Boolean::class -> preferences.getBoolean(key, false) as T?
-            // Handle other types as needed
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }
